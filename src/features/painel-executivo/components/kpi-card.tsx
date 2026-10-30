@@ -33,15 +33,15 @@ export function Delta({
   maiorMelhor: boolean;
 }) {
   if (value == null || !Number.isFinite(value)) {
-    return <span className="text-sm text-muted-foreground">sem comparação</span>;
+    return <span className="text-xs text-muted-foreground">sem comparação</span>;
   }
   const neutro = Math.abs(value) < 0.05;
   const bom = value > 0 === maiorMelhor;
   const cor = neutro ? "text-muted-foreground" : bom ? "text-success" : "text-error";
   const icone = neutro ? mdiMinus : value > 0 ? mdiArrowUpBold : mdiArrowDownBold;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-sm font-semibold tabular-nums ${cor}`}>
-      <Icon path={icone} size={0.65} aria-hidden />
+    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums ${cor}`}>
+      <Icon path={icone} size={0.55} aria-hidden />
       {unidade === "%" ? formatVariacao(value) : formatPontos(value)}
     </span>
   );
@@ -71,12 +71,12 @@ export function KpiCard({
 }) {
   const t = TONS[tom];
   return (
-    <article className="flex min-w-0 flex-col rounded-2xl border bg-card p-4 text-card-foreground shadow-md">
-      <div className="flex items-center gap-2.5">
-        <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${t.bg}`}>
-          <Icon path={icone} size={0.95} className={t.icon} aria-hidden />
+    <article className="flex min-w-0 flex-col rounded-2xl border bg-card px-3 py-2.5 text-card-foreground shadow-md">
+      <div className="flex items-center gap-2">
+        <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${t.bg}`}>
+          <Icon path={icone} size={0.75} className={t.icon} aria-hidden />
         </div>
-        <h3 className="min-w-0 truncate text-sm font-semibold" title={titulo}>
+        <h3 className="min-w-0 truncate text-[13px] font-semibold" title={titulo}>
           {titulo}
         </h3>
         <span title={ajuda} className="shrink-0 cursor-help text-muted-foreground" aria-label={ajuda}>
@@ -89,17 +89,19 @@ export function KpiCard({
         )}
       </div>
       {carregando ? (
-        <div className="mt-3 space-y-2">
-          <Skeleton className="h-8 w-36" />
+        <div className="mt-2 space-y-1.5">
+          <Skeleton className="h-6 w-32" />
           <Skeleton className="h-4 w-24" />
         </div>
       ) : (
         <>
-          <div className="mt-2 truncate text-2xl font-bold tabular-nums tracking-tight">{valor}</div>
-          {/* O minigráfico desce para a linha de baixo quando o card é estreito. */}
-          <div className="mt-1 flex flex-1 flex-wrap items-end justify-between gap-x-2 gap-y-1">
-            <div className="flex min-w-0 flex-col gap-0.5 text-sm text-muted-foreground">{linhas}</div>
-            {grafico && <div className="ml-auto">{grafico}</div>}
+          {/* Minigráfico ao lado do valor e da variação: o card fica mais baixo. */}
+          <div className="mt-1 flex flex-1 items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-xl font-bold tabular-nums tracking-tight">{valor}</div>
+              <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">{linhas}</div>
+            </div>
+            {grafico}
           </div>
         </>
       )}
@@ -109,5 +111,5 @@ export function KpiCard({
 
 /** Mensagem no lugar do valor quando não há dados. */
 export function SemDados({ children }: { children: ReactNode }) {
-  return <span className="text-base font-medium text-muted-foreground">{children}</span>;
+  return <span className="text-sm font-medium text-muted-foreground">{children}</span>;
 }

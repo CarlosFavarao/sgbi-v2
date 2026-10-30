@@ -28,11 +28,11 @@ export function MetaAcumulado({
         </div>
       </CardHeader>
 
-      <div className="flex flex-1 flex-col gap-4 p-5">
+      <div className="flex flex-1 flex-col gap-3 px-4 pb-3 pt-2">
         {carregando && !meta ? (
-          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
         ) : !meta || atingido == null ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-1 py-6 text-center">
             <span className="font-medium">Meta não cadastrada para {meta ? formatMesAno(meta.mes) : "o mês"}</span>
             <span className="text-sm text-muted-foreground">
               Realizado no mês: {formatMoeda(meta?.realizadoMes ?? 0)}
@@ -42,7 +42,7 @@ export function MetaAcumulado({
           <>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <div className="text-2xl font-bold tabular-nums">{formatMoeda(meta.realizadoMes)}</div>
+                <div className="text-xl font-bold tabular-nums">{formatMoeda(meta.realizadoMes)}</div>
                 <div className="text-sm font-semibold text-success">{formatPercentual(atingido)} da meta</div>
               </div>
               <dl className="flex gap-6 text-sm">
@@ -66,8 +66,8 @@ export function MetaAcumulado({
             >
               <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(atingido, 100)}%` }} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-3 rounded-xl border p-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2 rounded-xl border p-2">
                 <Icon path={mdiChartBar} size={1.1} className="text-primary" aria-hidden />
                 <div>
                   <div className="text-xs text-muted-foreground">Média diária necessária</div>
@@ -76,7 +76,7 @@ export function MetaAcumulado({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-xl border p-3">
+              <div className="flex items-center gap-2 rounded-xl border p-2">
                 <Icon path={mdiCalendarMonthOutline} size={1.1} className="text-primary" aria-hidden />
                 <div>
                   <div className="text-xs text-muted-foreground">Dias restantes</div>

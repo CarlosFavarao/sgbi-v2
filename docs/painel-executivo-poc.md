@@ -100,7 +100,7 @@ Origem: `tailwind.config.js` e `src/app/style.css` do projeto antigo. A base é 
 - Títulos de card: `text-2xl font-semibold`.
 - O CSS antigo tinha um bloco `.dark`, mas o BI nunca ofereceu tema escuro. **O v2 tem tema escuro** (implementado em `src/app/globals.css`, alternado com `next-themes`).
 - Cores das séries no painel antigo: vendas `#5cd670`, custos `#f075b3`, lucro `#f6b355`.
-- Barra superior: azul `#4B8CFF`, 60px, texto branco, `shadow-lg` (`Menu/index.tsx` do BI antigo). **Decidido: manter como no BI antigo**; o print serve só como referência de quais dados a tela mostra.
+- Navegação: no BI antigo é uma barra superior azul `#4B8CFF` de 60px (`Menu/index.tsx`). **No v2 virou uma barra lateral recolhível** na mesma cor (pedido do coordenador em 30/10/2026, para ganhar altura): recolhida por padrão, só com ícones; no celular vira um menu deslizante. O print serve só como referência de quais dados a tela mostra.
 
 ## 6. Decisões (30/10/2026)
 
@@ -112,6 +112,7 @@ Origem: `tailwind.config.js` e `src/app/style.css` do projeto antigo. A base é 
 4. **Metas e despesas**: a qualidade vai popular em homologação. Até lá, esses cards mostram "sem dados no período".
 5. **Visual**: manter o estilo do BI antigo, com tema escuro novo no v2.
 6. **Descontos**: decisão adiada (como calcular sem a consulta de 34 s).
+7. **Densidade** (pedido do coordenador, 30/10/2026): os clientes preferem ver mais informação sem rolar a tela. Barra lateral no lugar da barra superior, cards e gráficos mais baixos, KPIs numa grade de 5 × 2. Os filtros mantêm o tamanho atual. A barra lateral tem 48px e expande por cima do conteúdo. A tabela por nível e os alertas ficam numa linha redimensionável (largura e altura) que, por padrão, ocupa o resto da tela; os alertas têm rolagem própria. A página não rola em 1536 × 864 nem em 1920 × 1080.
 
 O dicionário `message.json` é antigo e serve só como apoio; a fonte da verdade é o banco e o código.
 

@@ -4,6 +4,7 @@ import Icon from "@mdi/react";
 import { mdiAlertCircleOutline, mdiAlertOutline, mdiDatabaseClockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { ResizableRow } from "@/components/ui/resizable-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { alertas as gerarAlertas, calcularLinha, indicadores, totais } from "../compute";
 import { PERIODO_PADRAO } from "../config";
@@ -67,18 +68,16 @@ export function PainelExecutivo() {
   }, [resumo.data]);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-2.5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Painel Executivo</h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-            Visão geral do desempenho do supermercado
-            {filiaisQuery.data?.dataMaxima && (
-              <span className="inline-flex items-center gap-1">
-                · <Icon path={mdiDatabaseClockOutline} size={0.6} aria-hidden />
-                Dados até {formatData(filiaisQuery.data.dataMaxima)}
-              </span>
-            )}
+          <h1 className="text-xl font-bold tracking-tight">Painel Executivo</h1>
+          <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            {/* Subtítulo curto: título e filtros cabem na mesma linha. */}
+            <Icon path={mdiDatabaseClockOutline} size={0.6} aria-hidden />
+            {filiaisQuery.data?.dataMaxima
+              ? `Dados até ${formatData(filiaisQuery.data.dataMaxima)}`
+              : "Carregando…"}
           </p>
         </div>
         {filiaisQuery.data ? (
@@ -95,7 +94,7 @@ export function PainelExecutivo() {
       </div>
 
       {(filiaisQuery.isError || resumo.isError) && (
-        <div className="flex items-center gap-3 rounded-xl border border-error/40 bg-negative-highlight p-3 text-sm">
+        <div className="flex items-center gap-3 rounded-xl border border-error/40 bg-negative-highlight px-3 py-2 text-sm">
           <Icon path={mdiAlertCircleOutline} size={0.9} className="text-error" aria-hidden />
           <span>{(filiaisQuery.error ?? resumo.error)?.message}</span>
           <button
@@ -109,7 +108,7 @@ export function PainelExecutivo() {
       )}
 
       {lacunas.length > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-summary-orange-bg p-3 text-sm">
+        <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-summary-orange-bg px-3 py-2 text-xs">
           <Icon path={mdiAlertOutline} size={0.9} className="mt-0.5 shrink-0 text-warning" aria-hidden />
           <div>
             <div className="font-semibold">Dados incompletos: as variações podem estar distorcidas.</div>
@@ -122,7 +121,7 @@ export function PainelExecutivo() {
         </div>
       )}
 
-      <div className={`flex flex-col gap-3 transition-opacity ${atualizando ? "opacity-60" : ""}`} aria-busy={atualizando}>
+      <div className={`flex flex-col gap-2.5 transition-opacity ${atualizando ? "opacity-60" : ""}`} aria-busy={atualizando}>
         <KpiGrid
           resumo={resumo.data}
           meta={meta.data}
@@ -130,7 +129,7 @@ export function PainelExecutivo() {
           carregandoMeta={meta.isPending}
         />
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-3">
           <EvolucaoChart
             titulo="Evolução da Venda"
             medida="venda"
@@ -152,12 +151,13 @@ export function PainelExecutivo() {
           <MetaAcumulado meta={meta.data} carregando={meta.isPending} />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-          <div className="min-w-0 xl:col-span-2">
-            <DepartamentosTable filtros={filtros} />
-          </div>
-          <AlertasList alertas={listaAlertas} carregando={resumo.isPending || departamentos.isPending} />
-        </div>
+        <ResizableRow
+          storageKey="sgbi:painel-executivo:linha-departamentos"
+          esquerda={<DepartamentosTable filtros={filtros} />}
+          direita={
+            <AlertasList alertas={listaAlertas} carregando={resumo.isPending || departamentos.isPending} />
+          }
+        />
       </div>
     </div>
   );

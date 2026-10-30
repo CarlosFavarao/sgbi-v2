@@ -10,7 +10,7 @@ Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind
 ## Stack obrigatória
 
 - **Drizzle ORM** + `mysql2` — banco **MySQL 5.7** (`sgbi_teste` em homologação). Cliente em `src/db/index.ts` (server-only), schema em `src/db/schema.ts`, config em `drizzle.config.ts`.
-- **TanStack React Query v5** — provider em `src/app/providers.tsx` (montado no root layout), devtools no canto inferior esquerdo em dev.
+- **TanStack React Query v5** — provider em `src/app/providers.tsx` (montado no root layout), devtools no canto inferior direito em dev.
 - **Recharts v3** — gráficos; sempre em Client Components (`"use client"`).
 - **Material Community Icons** — `@mdi/react` + `@mdi/js` (`<Icon path={mdiChartBar} size={1} />`). Importe só os ícones usados de `@mdi/js`.
 
@@ -25,6 +25,8 @@ Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind
 
 - O estilo segue o BI antigo (`../sgbi`): azul `#4B8CFF`, fundo liso `bg-background` (sem o padrão de linhas do BI antigo), cards `rounded-2xl border bg-card shadow-md`, fonte Inter. Prints de referência definem **quais dados** uma tela mostra, não o visual.
 - Tokens em `src/app/globals.css` (nomes compatíveis com shadcn): `:root` = claro (valores do BI antigo), `.dark` = escuro (novo no v2). Use sempre as classes dos tokens (`bg-card`, `text-muted-foreground`, `bg-summary-green-bg`, `text-success`, `bg-chart-1`, `bg-header`…), nunca cores fixas, para funcionar nos dois temas.
+- Layout compacto (os clientes preferem ver tudo sem rolar): `src/components/app-shell.tsx` é a barra lateral de 48px que expande **por cima** do conteúdo (não empurra o layout; fecha com clique fora/Esc; menu deslizante no celular). Espaçamento de 10px entre cards, títulos de card `text-base`, valores de KPI `text-xl`. Os filtros (`h-9`) ficam do tamanho atual.
+- Painéis redimensionáveis: `src/components/ui/resizable-row.tsx` (alças de largura e altura, teclado e duplo clique para restaurar; tamanho salvo no `localStorage`). Sem ajuste salvo, a altura ocupa o resto da tela, sem rolar a página. Verifique telas novas em 1536×864.
 - Tema alternado por `next-themes` (classe `.dark` no `<html>`) e `src/components/theme-toggle.tsx`. Gráficos Recharts devem usar `var(--chart-N)` e `var(--border)`.
 
 ## Ambiente

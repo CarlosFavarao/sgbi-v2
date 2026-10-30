@@ -68,7 +68,7 @@ export function EvolucaoChart({
       <CardHeader>
         <div>
           <CardTitle>{titulo}</CardTitle>
-          <ul className="mt-1 flex gap-4 text-xs text-muted-foreground">
+          <ul className="mt-0.5 flex gap-3 text-xs text-muted-foreground">
             <li className="flex items-center gap-1.5">
               <span className="size-2.5 rounded-full" style={{ background: cor }} />
               {nomeAtual}
@@ -93,7 +93,7 @@ export function EvolucaoChart({
         </Select>
       </CardHeader>
 
-      <div className="h-72 px-2 pb-3 pt-2">
+      <div className="h-44 px-1 pb-2 pt-1">
         {carregando && !resumo ? (
           <Skeleton className="h-full w-full rounded-xl" />
         ) : !temDados ? (

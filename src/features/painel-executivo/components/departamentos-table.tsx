@@ -56,7 +56,7 @@ function totalizar(linhas: LinhaCalculada[]): LinhaCalculada {
   return calcularLinha({ codigo: 0, descricao: "Total", ...soma });
 }
 
-const th = "px-3 py-2 font-medium";
+const th = "px-3 py-1.5 font-medium";
 
 export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
   const [nivel, setNivel] = useState<Nivel>("departamento");
@@ -75,7 +75,7 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
   const rotuloNivel = NIVEIS.find((n) => n.value === nivel)!.label;
 
   return (
-    <Card className="min-w-0">
+    <Card className="h-full min-w-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Icon path={mdiCubeOutline} size={0.9} className="text-primary" aria-hidden />
@@ -95,22 +95,22 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder={`Buscar ${rotuloNivel.toLowerCase()}…`}
-              className="h-9 w-56 rounded-lg border bg-card pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:border-primary"
+              className="h-9 w-52 rounded-lg border bg-card pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:border-primary"
             />
           </label>
         </div>
       </CardHeader>
 
-      <div className="p-4">
+      <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
         {isPending ? (
-          <Skeleton className="h-80 w-full rounded-xl" />
+          <Skeleton className="h-full w-full rounded-xl" />
         ) : isError ? (
           <p className="py-10 text-center text-sm text-error">{error.message}</p>
         ) : (
           <div
-            className={`max-h-[26rem] overflow-auto rounded-xl border transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}
+            className={`min-h-0 flex-1 overflow-auto rounded-xl border transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}
           >
-            <table className="w-full min-w-[56rem] border-collapse text-sm">
+            <table className="w-full min-w-[56rem] border-collapse text-[13px]">
               <thead className="sticky top-0 z-10 bg-secondary text-xs text-muted-foreground">
                 <tr>
                   <th rowSpan={2} className={`${th} text-left`}>
@@ -133,20 +133,20 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
               <tbody>
                 {filtradas.map((l) => (
                   <tr key={l.codigo} className="border-t hover:bg-secondary/50">
-                    <td className="px-3 py-1.5 font-medium">{l.descricao}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">{formatMoeda(l.compra)}</td>
-                    <td className="px-3 py-1.5 text-right">
+                    <td className="px-3 py-1 font-medium">{l.descricao}</td>
+                    <td className="px-3 py-1 text-right tabular-nums">{formatMoeda(l.compra)}</td>
+                    <td className="px-3 py-1 text-right">
                       <Delta value={l.variacaoCompra} unidade="%" maiorMelhor={false} />
                     </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">{formatMoeda(l.venda)}</td>
-                    <td className="px-3 py-1.5 text-right">
+                    <td className="px-3 py-1 text-right tabular-nums">{formatMoeda(l.venda)}</td>
+                    <td className="px-3 py-1 text-right">
                       <Delta value={l.variacaoVenda} unidade="%" maiorMelhor />
                     </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">{formatPercentual(l.compraSobreVenda)}</td>
-                    <td className="px-3 py-1.5 text-right">
+                    <td className="px-3 py-1 text-right tabular-nums">{formatPercentual(l.compraSobreVenda)}</td>
+                    <td className="px-3 py-1 text-right">
                       <PontosCompra value={l.variacaoPp} />
                     </td>
-                    <td className="px-3 py-1.5 text-center">
+                    <td className="px-3 py-1 text-center">
                       <SituacaoBadge situacao={l.situacao} />
                     </td>
                   </tr>
@@ -161,20 +161,20 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
               </tbody>
               <tfoot className="sticky bottom-0 bg-card font-semibold">
                 <tr className="border-t-2">
-                  <td className="px-3 py-2">Total</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{formatMoeda(total.compra)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-1.5">Total</td>
+                  <td className="px-3 py-1.5 text-right tabular-nums">{formatMoeda(total.compra)}</td>
+                  <td className="px-3 py-1.5 text-right">
                     <Delta value={total.variacaoCompra} unidade="%" maiorMelhor={false} />
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{formatMoeda(total.venda)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-1.5 text-right tabular-nums">{formatMoeda(total.venda)}</td>
+                  <td className="px-3 py-1.5 text-right">
                     <Delta value={total.variacaoVenda} unidade="%" maiorMelhor />
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{formatPercentual(total.compraSobreVenda)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-1.5 text-right tabular-nums">{formatPercentual(total.compraSobreVenda)}</td>
+                  <td className="px-3 py-1.5 text-right">
                     <PontosCompra value={total.variacaoPp} />
                   </td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-3 py-1.5 text-center">
                     <SituacaoBadge situacao={total.situacao} />
                   </td>
                 </tr>
