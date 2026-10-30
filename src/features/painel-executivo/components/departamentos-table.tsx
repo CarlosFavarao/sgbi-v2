@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/segmented";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { calcularLinha, type LinhaCalculada, type Situacao } from "../compute";
 import { formatMoeda, formatPercentual, formatPontos } from "../format";
 import { painelQueries } from "../queries";
@@ -66,6 +66,8 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
     painelQueries.departamentos(filtros, nivel),
   );
 
+  // Primeiro carregamento ou troca de nível/filtro (dados anteriores cobertos).
+  const carregando = isPending || isPlaceholderData;
   const linhas = useMemo(() => (data?.linhas ?? []).map(calcularLinha), [data]);
   const filtradas = useMemo(() => {
     const termo = buscaAdiada.trim().toLocaleLowerCase("pt-BR");
@@ -101,14 +103,14 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
         </div>
       </CardHeader>
 
-      <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
+      <div className="relative flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2" aria-busy={carregando}>
         {isPending ? (
-          <Skeleton className="h-full w-full rounded-xl" />
+          <div className="min-h-0 flex-1 rounded-xl border" />
         ) : isError ? (
           <p className="py-10 text-center text-sm text-error">{error.message}</p>
         ) : (
           <div
-            className={`min-h-0 flex-1 overflow-auto rounded-xl border transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}
+            className="min-h-0 flex-1 overflow-auto rounded-xl border"
           >
             <table className="w-full min-w-[56rem] border-collapse text-[13px]">
               <thead className="sticky top-0 z-10 bg-secondary text-xs text-muted-foreground">
@@ -182,6 +184,8 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
             </table>
           </div>
         )}
+        {/* z-20: acima do cabeçalho fixo (sticky) da tabela. */}
+        <LoadingOverlay ativo={carregando} className="z-20 rounded-b-2xl" />
       </div>
     </Card>
   );

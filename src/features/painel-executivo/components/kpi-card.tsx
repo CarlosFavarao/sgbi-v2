@@ -1,7 +1,7 @@
 import Icon from "@mdi/react";
 import { mdiArrowDownBold, mdiArrowUpBold, mdiInformationOutline, mdiMinus } from "@mdi/js";
 import type { ReactNode } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { formatPontos, formatVariacao } from "../format";
 
 export type Tom = "green" | "gold" | "pink" | "blue" | "purple" | "teal" | "orange" | "coral";
@@ -71,7 +71,7 @@ export function KpiCard({
 }) {
   const t = TONS[tom];
   return (
-    <article className="flex min-w-0 flex-col rounded-2xl border bg-card px-3 py-2.5 text-card-foreground shadow-md">
+    <article aria-busy={!!carregando} className="relative flex min-w-0 flex-col rounded-2xl border bg-card px-3 py-2.5 text-card-foreground shadow-md">
       <div className="flex items-center gap-2">
         <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${t.bg}`}>
           <Icon path={icone} size={0.75} className={t.icon} aria-hidden />
@@ -88,23 +88,18 @@ export function KpiCard({
           </span>
         )}
       </div>
-      {carregando ? (
-        <div className="mt-2 space-y-1.5">
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-4 w-24" />
-        </div>
-      ) : (
-        <>
-          {/* Minigráfico ao lado do valor e da variação: o card fica mais baixo. */}
-          <div className="mt-1 flex flex-1 items-end justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-xl font-bold tabular-nums tracking-tight">{valor}</div>
-              <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">{linhas}</div>
-            </div>
-            {grafico}
+      {/* Minigráfico ao lado do valor e da variação: o card fica mais baixo. */}
+      <div className="mt-1 flex flex-1 items-end justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-xl font-bold tabular-nums tracking-tight">{valor}</div>
+          <div className="flex min-h-4 min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+            {linhas}
           </div>
-        </>
-      )}
+        </div>
+        {grafico}
+      </div>
+      {/* Cobre o card inteiro: os dados antigos (ou vazios) não ficam legíveis. */}
+      <LoadingOverlay ativo={!!carregando} label={titulo} className="rounded-2xl" />
     </article>
   );
 }

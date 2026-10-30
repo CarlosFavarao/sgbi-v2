@@ -130,7 +130,7 @@ Estrutura em `src/features/painel-executivo/`:
 |---|---|
 | `server/data.ts` | Queries Drizzle (server-only) com `'use cache'`, `cacheLife('hours')` e tag `painel-executivo` |
 | `server/params.ts` | Validação dos parâmetros das rotas (400) e tratamento de erro (500) |
-| `src/app/api/painel-executivo/{filiais,resumo,meta,departamentos}` | Route Handlers consumidos pelo React Query |
+| `src/app/api/painel-executivo/{filiais,series/[fonte],meta,departamentos}` | Route Handlers consumidos pelo React Query |
 | `queries.ts` | `queryOptions` do React Query (chaves, `staleTime`, `keepPreviousData`) |
 | `compute.ts` | Cálculos puros: KPIs, agregação dia/semana/mês, situação e alertas |
 | `config.ts` | **Limites da Situação e dos Alertas** e período inicial |
@@ -139,7 +139,8 @@ Estrutura em `src/features/painel-executivo/`:
 
 Comportamentos:
 
-- A rota `/resumo` devolve a série diária dos dois períodos; KPIs, minigráficos e gráficos de evolução são calculados no cliente a partir dela.
+- A rota `/series/[fonte]` (`vendas`, `pdv`, `cancelamentos`, `despesas`) devolve a série diária de uma fonte nos dois períodos. Cada fonte é uma consulta separada, então cada card aparece assim que as suas fontes chegam; o cliente combina as séries (`combinarSeries`) e calcula KPIs, minigráficos e gráficos de evolução.
+- Carregamento: cada card mostra uma camada escura com desfoque e spinner (`LoadingOverlay`) no primeiro carregamento e ao trocar filtros; os dados anteriores ficam cobertos até os novos chegarem.
 - Quando algum período tem dias sem venda carregada, a tela mostra um aviso de "dados incompletos", porque a variação fica distorcida (exemplo: 13/08 a 03/09/2026 tem venda em só 6 de 22 dias).
 - Cards sem dados mostram "Sem dados no período" ou "sem dados no período anterior", em vez de R$ 0.
 - Nenhuma rota consulta o banco durante o `next build`: o build da imagem Docker não tem acesso ao banco do cliente.

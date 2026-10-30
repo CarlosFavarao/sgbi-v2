@@ -1,7 +1,7 @@
 import Icon from "@mdi/react";
 import { mdiCalendarMonthOutline, mdiChartBar } from "@mdi/js";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { percentual } from "../compute";
 import { formatMesAno, formatMoeda, formatPercentual } from "../format";
 import type { MetaResponse } from "../types";
@@ -28,9 +28,9 @@ export function MetaAcumulado({
         </div>
       </CardHeader>
 
-      <div className="flex flex-1 flex-col gap-3 px-4 pb-3 pt-2">
+      <div className="relative flex flex-1 flex-col gap-3 px-4 pb-3 pt-2" aria-busy={carregando}>
         {carregando && !meta ? (
-          <Skeleton className="h-40 w-full rounded-xl" />
+          <div className="min-h-40 flex-1" />
         ) : !meta || atingido == null ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-1 py-6 text-center">
             <span className="font-medium">Meta não cadastrada para {meta ? formatMesAno(meta.mes) : "o mês"}</span>
@@ -86,6 +86,7 @@ export function MetaAcumulado({
             </div>
           </>
         )}
+        <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
       </div>
     </Card>
   );

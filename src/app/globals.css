@@ -29,6 +29,10 @@
   --ring: hsl(219 100% 65%);
   --radius: 0.5rem;
 
+  /* Camada sobre os dados enquanto carregam (escurece e esconde). */
+  --loading-scrim: hsl(220 45% 98% / 0.8);
+  --loading-foreground: hsl(219 100% 60%);
+
   /* Barra superior do BI antigo */
   --header: #4b8cff;
   --header-foreground: hsl(0 0% 100%);
@@ -92,6 +96,9 @@
   --input: hsl(220 15% 20%);
   --ring: hsl(219 90% 70%);
 
+  --loading-scrim: hsl(220 15% 16% / 0.66);
+  --loading-foreground: hsl(220 20% 92%);
+
   --header: hsl(220 15% 13%);
   --header-foreground: hsl(220 20% 90%);
 
@@ -154,6 +161,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-header: var(--header);
+  --color-loading-scrim: var(--loading-scrim);
+  --color-loading-foreground: var(--loading-foreground);
   --color-header-foreground: var(--header-foreground);
 
   --color-chart-1: var(--chart-1);

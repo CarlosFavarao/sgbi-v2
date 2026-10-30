@@ -4,8 +4,9 @@ import type {
   FiliaisResponse,
   Filtros,
   MetaResponse,
+  Fonte,
   Nivel,
-  ResumoResponse,
+  SerieResponse,
 } from "./types";
 
 const BASE = "/api/painel-executivo";
@@ -39,14 +40,18 @@ export const painelQueries = {
       staleTime: Infinity,
     }),
 
-  resumo: (filtros: Filtros) =>
-    queryOptions({
-      queryKey: ["painel-executivo", "resumo", toParams(filtros)],
-      queryFn: () => get<ResumoResponse>("/resumo", toParams(filtros)),
+  serie: (filtros: Filtros, fonte: Fonte) => {
+    // Só "vendas" depende da origem: as outras fontes não recarregam ao trocá-la.
+    const { origem, ...resto } = toParams(filtros);
+    const params = fonte === "vendas" ? { ...resto, origem } : resto;
+    return queryOptions({
+      queryKey: ["painel-executivo", "serie", fonte, params],
+      queryFn: () => get<SerieResponse>(`/series/${fonte}`, params),
       staleTime: STALE_TIME,
       placeholderData: keepPreviousData,
       enabled: filtros.filiais.length > 0,
-    }),
+    });
+  },
 
   meta: (filtros: Filtros) => {
     // A meta não depende do período de comparação.

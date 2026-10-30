@@ -14,7 +14,7 @@ import {
 } from "@mdi/js";
 import { diferencaPp, indicadores, percentual, serieDiaria, variacao, type Indicadores } from "../compute";
 import { formatMoeda, formatMoedaCentavos, formatPercentual } from "../format";
-import type { MetaResponse, ResumoResponse } from "../types";
+import type { Fonte, MetaResponse, ResumoResponse } from "../types";
 import { corDoTom, Delta, KpiCard, SemDados } from "./kpi-card";
 import { Sparkline } from "./sparkline";
 
@@ -31,17 +31,16 @@ export function KpiGrid({
   resumo,
   meta,
   carregando,
-  carregandoMeta,
 }: {
   resumo: ResumoResponse | undefined;
   meta: MetaResponse | undefined;
-  carregando: boolean;
-  carregandoMeta: boolean;
+  /** Fontes ainda carregando: cada card espera só as fontes que usa. */
+  carregando: Record<Fonte | "meta", boolean>;
 }) {
   const dias = resumo?.atual.dias ?? [];
   const a: Indicadores = indicadores(dias);
   const b: Indicadores = indicadores(resumo?.anterior.dias ?? []);
-  const loading = carregando || !resumo;
+  const c = carregando;
 
   // Venda zerada (ex.: origem Faturamento sem notas) conta como "sem dados".
   const temVenda = a.cobertura.venda > 0 && a.venda !== 0;
@@ -63,7 +62,7 @@ export function KpiGrid({
           ajuda="Soma da venda (PDV e/ou faturamento, conforme a Origem) no período."
           icone={mdiChartBar}
           tom="green"
-          carregando={loading}
+          carregando={c.vendas}
           valor={temVenda ? formatMoeda(a.venda) : <SemDados>Sem dados no período</SemDados>}
           linhas={
             temVenda && (
@@ -90,7 +89,7 @@ export function KpiGrid({
           ajuda="Venda menos o custo da mercadoria vendida."
           icone={mdiSackOutline}
           tom="gold"
-          carregando={loading}
+          carregando={c.vendas}
           valor={temVenda ? formatMoeda(a.lucro) : <SemDados>Sem dados no período</SemDados>}
           linhas={
             temVenda && (
@@ -117,7 +116,7 @@ export function KpiGrid({
           ajuda="Lucro bruto dividido pela venda. Variação em pontos percentuais."
           icone={mdiPercentOutline}
           tom="pink"
-          carregando={loading}
+          carregando={c.vendas}
           valor={a.margem != null ? formatPercentual(a.margem) : <SemDados>Sem dados no período</SemDados>}
           linhas={
             a.margem != null && (
@@ -144,7 +143,7 @@ export function KpiGrid({
           ajuda="Soma das despesas lançadas no período (tabela despesa)."
           icone={mdiOfficeBuildingOutline}
           tom="blue"
-          carregando={loading}
+          carregando={c.despesas || c.vendas}
           valor={temDespesas ? formatMoeda(a.despesas) : <SemDados>Sem despesas no período</SemDados>}
           linhas={
             temDespesas && (
@@ -177,7 +176,7 @@ export function KpiGrid({
           ajuda="Lucro bruto menos as despesas operacionais."
           icone={mdiFinance}
           tom="purple"
-          carregando={loading}
+          carregando={c.vendas || c.despesas}
           valor={
             temVenda && temDespesas ? (
               formatMoeda(a.resultado)
@@ -204,7 +203,7 @@ export function KpiGrid({
           ajuda="Venda do período dividida pela meta (previsão de venda por dia) do mesmo período."
           icone={mdiBullseyeArrow}
           tom="teal"
-          carregando={loading || carregandoMeta}
+          carregando={c.meta || c.vendas}
           valor={
             atingido != null ? (
               formatMoeda(a.venda)
@@ -239,7 +238,7 @@ export function KpiGrid({
           icone={mdiCartOutline}
           tom="orange"
           badge="PDV"
-          carregando={loading}
+          carregando={c.pdv}
           valor={a.ticketMedio != null ? formatMoedaCentavos(a.ticketMedio) : <SemDados>Sem dados no período</SemDados>}
           linhas={
             a.ticketMedio != null && (
@@ -266,7 +265,7 @@ export function KpiGrid({
           ajuda="Total comprado dividido pela venda do período. Quanto menor, melhor."
           icone={mdiCubeOutline}
           tom="blue"
-          carregando={loading}
+          carregando={c.vendas}
           valor={
             a.compraSobreVenda != null ? (
               formatPercentual(a.compraSobreVenda)
@@ -304,7 +303,7 @@ export function KpiGrid({
           icone={mdiCartRemove}
           tom="coral"
           badge="PDV"
-          carregando={loading}
+          carregando={c.cancelamentos || c.pdv}
           valor={
             a.cobertura.cancelamentos ? (
               formatMoeda(a.cancelamentos)

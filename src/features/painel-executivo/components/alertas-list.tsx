@@ -12,7 +12,7 @@ import {
   mdiTagOutline,
 } from "@mdi/js";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import type { Alerta } from "../compute";
 
 const ICONES: Record<Alerta["tipo"], { path: string; className: string }> = {
@@ -40,31 +40,32 @@ export function AlertasList({ alertas, carregando }: { alertas: Alerta[]; carreg
         )}
       </CardHeader>
 
-      {/* Rolagem própria: o card tem a altura definida pelo painel. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 pb-3 pt-2">
-        {carregando ? (
-          Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-11 w-full rounded-xl" />)
-        ) : !alertas.length ? (
-          <div className="flex items-center gap-2 rounded-xl border p-2 text-sm text-muted-foreground">
-            <Icon path={mdiCheckCircleOutline} size={1} className="text-success" aria-hidden />
-            Nenhum ponto de atenção pelas regras atuais.
-          </div>
-        ) : (
-          alertas.map((alerta) => {
-            const icone = ICONES[alerta.tipo];
-            return (
-              <div key={alerta.id} className="flex shrink-0 items-center gap-2.5 rounded-xl border px-2.5 py-2">
-                <div className={`flex size-7 shrink-0 items-center justify-center rounded-full ${icone.className}`}>
-                  <Icon path={icone.path} size={0.7} aria-hidden />
+      <div className="relative flex min-h-0 flex-1 flex-col" aria-busy={carregando}>
+        {/* Rolagem própria: o card tem a altura definida pelo painel. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 pb-3 pt-2">
+          {!alertas.length && !carregando ? (
+            <div className="flex items-center gap-2 rounded-xl border p-2 text-sm text-muted-foreground">
+              <Icon path={mdiCheckCircleOutline} size={1} className="text-success" aria-hidden />
+              Nenhum ponto de atenção pelas regras atuais.
+            </div>
+          ) : (
+            alertas.map((alerta) => {
+              const icone = ICONES[alerta.tipo];
+              return (
+                <div key={alerta.id} className="flex shrink-0 items-center gap-2.5 rounded-xl border px-2.5 py-2">
+                  <div className={`flex size-7 shrink-0 items-center justify-center rounded-full ${icone.className}`}>
+                    <Icon path={icone.path} size={0.7} aria-hidden />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-semibold leading-snug">{alerta.titulo}</div>
+                    <div className="text-xs text-muted-foreground tabular-nums">{alerta.detalhe}</div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[13px] font-semibold leading-snug">{alerta.titulo}</div>
-                  <div className="text-xs text-muted-foreground tabular-nums">{alerta.detalhe}</div>
-                </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </div>
+        <LoadingOverlay ativo={carregando} label="Calculando alertas…" className="rounded-b-2xl" />
       </div>
     </Card>
   );

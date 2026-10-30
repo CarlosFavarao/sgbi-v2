@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { evolucao, type PontoEvolucao } from "../compute";
 import { formatDiaMes, formatMesAno } from "../format";
 import type { Granularidade, ResumoResponse } from "../types";
@@ -83,19 +83,14 @@ export function EvolucaoChart({
           aria-label={`Agrupamento de ${titulo}`}
           className="w-32"
           value={granularidade}
-          onChange={(e) => setGranularidade(e.target.value as Granularidade)}
-        >
-          {GRANULARIDADES.map((g) => (
-            <option key={g.value} value={g.value}>
-              {g.label}
-            </option>
-          ))}
-        </Select>
+          options={GRANULARIDADES}
+          onValueChange={setGranularidade}
+        />
       </CardHeader>
 
-      <div className="h-44 px-1 pb-2 pt-1">
-        {carregando && !resumo ? (
-          <Skeleton className="h-full w-full rounded-xl" />
+      <div className="relative h-44 px-1 pb-2 pt-1" aria-busy={carregando}>
+        {carregando && !temDados ? (
+          <div className="h-full" />
         ) : !temDados ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
             Sem dados no período
@@ -174,6 +169,7 @@ export function EvolucaoChart({
             </ComposedChart>
           </ResponsiveContainer>
         )}
+        <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
       </div>
     </Card>
   );

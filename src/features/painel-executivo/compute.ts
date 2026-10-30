@@ -1,8 +1,40 @@
 import { PAINEL_CONFIG } from "./config";
-import { startOfWeek } from "./date";
-import type { Dia, Granularidade, LinhaNivel, ResumoResponse } from "./types";
+import { eachDay, startOfWeek } from "./date";
+import type { Dia, Granularidade, LinhaNivel, Periodo, PontoSerie, ResumoResponse, SerieResponse } from "./types";
 
 type Campo = Exclude<keyof Dia, "data">;
+
+function preencher(periodo: Periodo, series: (PontoSerie[] | undefined)[]): Dia[] {
+  const porDia = new Map<string, PontoSerie>();
+  for (const serie of series) {
+    for (const ponto of serie ?? []) porDia.set(ponto.data, { ...porDia.get(ponto.data), ...ponto });
+  }
+  return eachDay(periodo).map((data) => {
+    const p = porDia.get(data);
+    return {
+      data,
+      venda: p?.venda ?? null,
+      custo: p?.custo ?? null,
+      compra: p?.compra ?? null,
+      vendaPdv: p?.vendaPdv ?? null,
+      tickets: p?.tickets ?? null,
+      cancelamentos: p?.cancelamentos ?? null,
+      despesas: p?.despesas ?? null,
+    };
+  });
+}
+
+/** Combina as fontes já carregadas; campos de fontes pendentes ficam null. */
+export function combinarSeries(
+  periodo: Periodo,
+  periodoAnterior: Periodo,
+  series: (SerieResponse | undefined)[],
+): ResumoResponse {
+  return {
+    atual: { periodo, dias: preencher(periodo, series.map((s) => s?.atual)) },
+    anterior: { periodo: periodoAnterior, dias: preencher(periodoAnterior, series.map((s) => s?.anterior)) },
+  };
+}
 
 export type Totais = Record<Campo, number> & {
   /** Dias com carga para cada campo; 0 = sem dados no período. */

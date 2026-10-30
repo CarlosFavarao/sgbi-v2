@@ -14,16 +14,17 @@ import {
   previsaoDia,
   subgrupos,
 } from "@/db/schema";
-import { daysInMonth, eachDay, firstDayOfMonth } from "../date";
+import { daysInMonth, firstDayOfMonth } from "../date";
 import type {
   DepartamentosResponse,
-  Dia,
   FiliaisResponse,
+  Fonte,
   LinhaNivel,
   MetaResponse,
   Nivel,
   Origem,
   Periodo,
+  PontoSerie,
 } from "../types";
 
 // Dados D-1 (carga noturna): cache de horas, invalidável pela tag.
@@ -80,82 +81,63 @@ export async function getFiliais(): Promise<FiliaisResponse> {
   };
 }
 
-/** Série diária de todas as métricas do resumo; dias sem carga ficam `null`. */
-export async function getDias(
+/**
+ * Série diária de uma fonte (só os dias com carga). Cada fonte é consultada
+ * separadamente para que cada card apareça assim que os seus dados chegam.
+ * `origem` só afeta a fonte "vendas".
+ */
+export async function getSerie(
+  fonte: Fonte,
   periodo: Periodo,
   lojas: number[],
   origem: Origem,
-): Promise<Dia[]> {
+): Promise<PontoSerie[]> {
   "use cache";
   cacheLife("hours");
   cacheTag(CACHE_TAG);
 
   const { inicio, fim } = periodo;
 
-  const [vendas, pdv, cancelados, despesas] = await Promise.all([
-    db
-      .select({
-        data: analiseGerencial.data,
-        venda: sum(vendaPorOrigem(origem)),
-        custo: sum(custoPorOrigem(origem)),
-        compra: sum(analiseGerencial.totalCompra),
-      })
-      .from(analiseGerencial)
-      .where(
-        and(
-          inArray(analiseGerencial.filial, lojas),
-          between(analiseGerencial.data, inicio, fim),
-        ),
-      )
-      .groupBy(analiseGerencial.data),
-    db
-      .select({
-        data: parfil.dataVenda,
-        venda: sum(parfil.totvrvenda),
-        tickets: sum(parfil.nclientes),
-      })
-      .from(parfil)
-      .where(and(inArray(parfil.filial, lojas), between(parfil.dataVenda, inicio, fim)))
-      .groupBy(parfil.dataVenda),
-    db
-      .select({
-        data: cancelamentos.dataCancelamento,
-        valor: sum(cancelamentos.valorTotalCancelamento),
-      })
-      .from(cancelamentos)
-      .where(
-        and(
-          inArray(cancelamentos.filial, lojas),
-          between(cancelamentos.dataCancelamento, inicio, fim),
-        ),
-      )
-      .groupBy(cancelamentos.dataCancelamento),
-    db
-      .select({ data: despesa.dataDespesa, valor: sum(despesa.valor) })
-      .from(despesa)
-      .where(and(inArray(despesa.filial, lojas), between(despesa.dataDespesa, inicio, fim)))
-      .groupBy(despesa.dataDespesa),
-  ]);
-
-  const vendasPorDia = new Map(vendas.map((v) => [v.data, v]));
-  const pdvPorDia = new Map(pdv.map((p) => [p.data, p]));
-  const cancelPorDia = new Map(cancelados.map((c) => [c.data, c.valor]));
-  const despesaPorDia = new Map(despesas.map((d) => [d.data, d.valor]));
-
-  return eachDay(periodo).map((data) => {
-    const v = vendasPorDia.get(data);
-    const p = pdvPorDia.get(data);
-    return {
-      data,
-      venda: v?.venda ?? null,
-      custo: v?.custo ?? null,
-      compra: v?.compra ?? null,
-      vendaPdv: p?.venda ?? null,
-      tickets: p?.tickets ?? null,
-      cancelamentos: cancelPorDia.get(data) ?? null,
-      despesas: despesaPorDia.get(data) ?? null,
-    };
-  });
+  switch (fonte) {
+    case "vendas":
+      return db
+        .select({
+          data: analiseGerencial.data,
+          venda: sum(vendaPorOrigem(origem)),
+          custo: sum(custoPorOrigem(origem)),
+          compra: sum(analiseGerencial.totalCompra),
+        })
+        .from(analiseGerencial)
+        .where(and(inArray(analiseGerencial.filial, lojas), between(analiseGerencial.data, inicio, fim)))
+        .groupBy(analiseGerencial.data);
+    case "pdv":
+      return db
+        .select({
+          data: parfil.dataVenda,
+          vendaPdv: sum(parfil.totvrvenda),
+          tickets: sum(parfil.nclientes),
+        })
+        .from(parfil)
+        .where(and(inArray(parfil.filial, lojas), between(parfil.dataVenda, inicio, fim)))
+        .groupBy(parfil.dataVenda);
+    case "cancelamentos":
+      return db
+        .select({
+          data: cancelamentos.dataCancelamento,
+          cancelamentos: sum(cancelamentos.valorTotalCancelamento),
+        })
+        .from(cancelamentos)
+        .where(
+          and(inArray(cancelamentos.filial, lojas), between(cancelamentos.dataCancelamento, inicio, fim)),
+        )
+        .groupBy(cancelamentos.dataCancelamento);
+    case "despesas":
+      return db
+        .select({ data: despesa.dataDespesa, despesas: sum(despesa.valor) })
+        .from(despesa)
+        .where(and(inArray(despesa.filial, lojas), between(despesa.dataDespesa, inicio, fim)))
+        .groupBy(despesa.dataDespesa);
+  }
 }
 
 const dataPrevisao = sql`str_to_date(concat(${previsaoDia.ano}, '-', ${previsaoDia.mes}, '-', ${previsaoDia.codigoDia}), '%Y-%m-%d')`;

@@ -39,6 +39,17 @@ export type Dia = {
   despesas: number | null;
 };
 
+/** Fontes de dados diários, consultadas separadamente. */
+export type Fonte = "vendas" | "pdv" | "cancelamentos" | "despesas";
+
+export type CampoDia = Exclude<keyof Dia, "data">;
+
+/** Um dia com carga em uma fonte (só os campos daquela fonte). */
+export type PontoSerie = { data: string } & Partial<Record<CampoDia, number>>;
+
+export type SerieResponse = { atual: PontoSerie[]; anterior: PontoSerie[] };
+
+/** Séries das fontes já carregadas, combinadas dia a dia (campos ausentes = null). */
 export type ResumoResponse = {
   atual: { periodo: Periodo; dias: Dia[] };
   anterior: { periodo: Periodo; dias: Dia[] };

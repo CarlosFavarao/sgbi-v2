@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_rethrow } from "next/navigation";
 import { daysBetween } from "../date";
-import type { Comparacao, Nivel, Origem, Periodo } from "../types";
+import type { Comparacao, Fonte, Nivel, Origem, Periodo } from "../types";
 
 export class ParamError extends Error {}
 
@@ -52,6 +52,10 @@ export function parseComparacao(params: URLSearchParams): Comparacao {
 
 export function parseNivel(params: URLSearchParams): Nivel {
   return oneOf(params.get("nivel") ?? "departamento", ["departamento", "grupo", "subgrupo"], "nivel");
+}
+
+export function parseFonte(fonte: string): Fonte {
+  return oneOf(fonte, ["vendas", "pdv", "cancelamentos", "despesas"], "fonte");
 }
 
 /** Responde 400 para parâmetros inválidos e 500 (sem detalhes) para o resto. */

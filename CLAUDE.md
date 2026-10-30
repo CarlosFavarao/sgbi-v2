@@ -19,7 +19,8 @@ Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind
 - Cada tela fica em `src/features/<tela>/`: `server/` (queries Drizzle server-only com `'use cache'`), `queries.ts` (React Query), `compute.ts` (cálculos puros), `config.ts` (regras de negócio ajustáveis) e `components/`.
 - Route Handlers em `src/app/api/<tela>/**/route.ts` validam parâmetros e chamam `server/`. Use o `handle()` de `server/params.ts`, que já repassa os erros internos do Next (`unstable_rethrow`).
 - Nenhuma rota pode consultar o banco no `next build` (o build Docker não tem banco): rotas sem parâmetros chamam `await connection()`.
-- Componentes base em `src/components/ui/` (Card, Select, Segmented, Skeleton, Field).
+- Componentes base em `src/components/ui/`: Card, Field, Segmented, `Select` (Radix), `Popover` (Radix), `Checkbox` (Radix), `Spinner`, `LoadingOverlay`, `ResizableRow`. **Nunca use controles nativos do navegador** (`<select>`, `<input type="date">`, checkbox nativo) nos filtros: use esses componentes; datas usam `react-day-picker` (ver `periodo-picker.tsx`).
+- Carregamento: cada card mostra o próprio `LoadingOverlay` (escurece e esconde os dados, com spinner) enquanto as suas consultas estão pendentes ou em `isPlaceholderData`. Não escureça a página inteira; quebre os dados em consultas por fonte para os cards carregarem independentes.
 
 ## Visual e tema
 
@@ -43,6 +44,8 @@ Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind
 - `npm run lint` — ESLint
 - `npm run db:pull` — introspecta o banco e gera schema Drizzle em `drizzle/`
 - `npm run db:studio` — Drizzle Studio
+
+> **Problema conhecido (dev):** às vezes o Turbopack continua servindo uma versão antiga do `globals.css` (tokens novos não aparecem), mesmo reiniciando o `npm run dev`. Solução: parar o servidor, apagar `.next/dev/cache/turbopack` (cache regenerável) e subir de novo.
 
 ## Skills do projeto (`.claude/skills/`)
 
