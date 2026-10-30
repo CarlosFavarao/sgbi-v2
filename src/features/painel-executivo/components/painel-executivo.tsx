@@ -67,7 +67,7 @@ export function PainelExecutivo() {
   }, [resumo.data]);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Painel Executivo</h1>
@@ -122,7 +122,7 @@ export function PainelExecutivo() {
         </div>
       )}
 
-      <div className={`flex flex-col gap-5 transition-opacity ${atualizando ? "opacity-60" : ""}`} aria-busy={atualizando}>
+      <div className={`flex flex-col gap-3 transition-opacity ${atualizando ? "opacity-60" : ""}`} aria-busy={atualizando}>
         <KpiGrid
           resumo={resumo.data}
           meta={meta.data}
@@ -130,7 +130,7 @@ export function PainelExecutivo() {
           carregandoMeta={meta.isPending}
         />
 
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
           <EvolucaoChart
             titulo="Evolução da Venda"
             medida="venda"
@@ -152,7 +152,7 @@ export function PainelExecutivo() {
           <MetaAcumulado meta={meta.data} carregando={meta.isPending} />
         </div>
 
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
           <div className="min-w-0 xl:col-span-2">
             <DepartamentosTable filtros={filtros} />
           </div>

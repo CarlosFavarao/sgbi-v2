@@ -5,6 +5,7 @@
 Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind CSS v4, ESLint), `src/` dir e alias `@/*`.
 
 > Reescrita do SGBI antigo (`/home/carlosf/repositories/sgbi`). Primeira entrega: POC da tela **Painel Executivo**, com análise, decisões e mapeamento de dados em `docs/painel-executivo-poc.md`.
+> O banco tem dados **até ontem**; dados do dia atual, finalizadoras, login e usuários vêm da API do VX (`API_VIEW`): ver `docs/api-externa-mapeamento.md`.
 
 ## Stack obrigatória
 

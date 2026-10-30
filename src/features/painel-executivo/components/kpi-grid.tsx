@@ -55,8 +55,8 @@ export function KpiGrid({
   const atingido = meta && meta.metaPeriodo ? percentual(a.venda, meta.metaPeriodo) : null;
 
   return (
-    <div className="grid gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+    <div className="grid gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <KpiCard
           titulo="Venda"
           ajuda="Soma da venda (PDV e/ou faturamento, conforme a Origem) no período."
@@ -231,7 +231,7 @@ export function KpiGrid({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
         <KpiCard
           titulo="Ticket Médio"
           ajuda="Venda do PDV dividida pela quantidade de cupons (tabela parfil). Não usa o filtro de Origem."
