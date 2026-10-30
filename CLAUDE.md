@@ -13,9 +13,16 @@ Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind
 - **Recharts v3** — gráficos; sempre em Client Components (`"use client"`).
 - **Material Community Icons** — `@mdi/react` + `@mdi/js` (`<Icon path={mdiChartBar} size={1} />`). Importe só os ícones usados de `@mdi/js`.
 
+## Estrutura
+
+- Cada tela fica em `src/features/<tela>/`: `server/` (queries Drizzle server-only com `'use cache'`), `queries.ts` (React Query), `compute.ts` (cálculos puros), `config.ts` (regras de negócio ajustáveis) e `components/`.
+- Route Handlers em `src/app/api/<tela>/**/route.ts` validam parâmetros e chamam `server/`. Use o `handle()` de `server/params.ts`, que já repassa os erros internos do Next (`unstable_rethrow`).
+- Nenhuma rota pode consultar o banco no `next build` (o build Docker não tem banco): rotas sem parâmetros chamam `await connection()`.
+- Componentes base em `src/components/ui/` (Card, Select, Segmented, Skeleton, Field).
+
 ## Visual e tema
 
-- O estilo segue o BI antigo (`../sgbi`): azul `#4B8CFF`, fundo `organic-lines-bg`, cards `rounded-2xl border bg-card shadow-md`, fonte Inter. Prints de referência definem **quais dados** uma tela mostra, não o visual.
+- O estilo segue o BI antigo (`../sgbi`): azul `#4B8CFF`, fundo liso `bg-background` (sem o padrão de linhas do BI antigo), cards `rounded-2xl border bg-card shadow-md`, fonte Inter. Prints de referência definem **quais dados** uma tela mostra, não o visual.
 - Tokens em `src/app/globals.css` (nomes compatíveis com shadcn): `:root` = claro (valores do BI antigo), `.dark` = escuro (novo no v2). Use sempre as classes dos tokens (`bg-card`, `text-muted-foreground`, `bg-summary-green-bg`, `text-success`, `bg-chart-1`, `bg-header`…), nunca cores fixas, para funcionar nos dois temas.
 - Tema alternado por `next-themes` (classe `.dark` no `<html>`) e `src/components/theme-toggle.tsx`. Gráficos Recharts devem usar `var(--chart-N)` e `var(--border)`.
 

@@ -84,7 +84,7 @@ Origem: `tailwind.config.js` e `src/app/style.css` do projeto antigo. A base é 
 
 | Token | Valor (claro) | Uso |
 |---|---|---|
-| `--background` | `hsl(220 60% 97%)` | Fundo da página, com o padrão `organic-lines-bg` (linhas onduladas em SVG) |
+| `--background` | `hsl(220 60% 97%)` | Fundo da página, liso (o padrão de linhas onduladas do BI antigo foi removido no v2) |
 | `--foreground` | `hsl(220 15% 25%)` | Texto |
 | `--card` | `#fff` | Cards: `rounded-2xl border shadow-md` |
 | `--primary` / `header-blue` | `hsl(219 100% 65%)` = `#4B8CFF` | Ações, aba ativa, série "atual" |
@@ -120,3 +120,34 @@ O dicionário `message.json` é antigo e serve só como apoio; a fonte da verdad
 1. **Schema**: portar para `src/db/schema.ts` só as tabelas da seção 2, com datas em `mode: 'string'` e só as colunas usadas do `logpdv`.
 2. **Camada de dados**: funções server-only por bloco da tela (KPIs, evolução, meta, departamentos, alertas), com `'use cache'`, `cacheLife` e tags por filial, período e origem, já que os dados são D-1. O React Query consome essas funções via Route Handlers, com hidratação inicial a partir de Server Components.
 3. **Período de demonstração**: julho/2026 contra junho/2026, até a qualidade popular metas e despesas.
+
+## 8. Implementação (primeira versão)
+
+Estrutura em `src/features/painel-executivo/`:
+
+| Arquivo | Papel |
+|---|---|
+| `server/data.ts` | Queries Drizzle (server-only) com `'use cache'`, `cacheLife('hours')` e tag `painel-executivo` |
+| `server/params.ts` | Validação dos parâmetros das rotas (400) e tratamento de erro (500) |
+| `src/app/api/painel-executivo/{filiais,resumo,meta,departamentos}` | Route Handlers consumidos pelo React Query |
+| `queries.ts` | `queryOptions` do React Query (chaves, `staleTime`, `keepPreviousData`) |
+| `compute.ts` | Cálculos puros: KPIs, agregação dia/semana/mês, situação e alertas |
+| `config.ts` | **Limites da Situação e dos Alertas** e período inicial |
+| `date.ts` / `format.ts` | Datas ISO em UTC e formatação pt-BR |
+| `components/` | Filtros, cards de KPI, gráficos, meta acumulada, tabela e alertas |
+
+Comportamentos:
+
+- A rota `/resumo` devolve a série diária dos dois períodos; KPIs, minigráficos e gráficos de evolução são calculados no cliente a partir dela.
+- Quando algum período tem dias sem venda carregada, a tela mostra um aviso de "dados incompletos", porque a variação fica distorcida (exemplo: 13/08 a 03/09/2026 tem venda em só 6 de 22 dias).
+- Cards sem dados mostram "Sem dados no período" ou "sem dados no período anterior", em vez de R$ 0.
+- Nenhuma rota consulta o banco durante o `next build`: o build da imagem Docker não tem acesso ao banco do cliente.
+- Medição local (`next start`): 0,8 a 1,5 s na primeira consulta; cerca de 5 ms com cache.
+
+Limitações conhecidas:
+
+- Descontos: card "Em definição" (decisão 6).
+- A lista de filiais vem da analise gerencial; a filial 3 (só no `parfil`) não aparece.
+- A tabela troca de nível pelas abas, mas ainda não expande um departamento em seus grupos.
+- Não há dados do dia (`API_VIEW`); a tela usa só dias fechados.
+- `PERIODO_PADRAO` está fixo em julho/2026 por causa da homologação.

@@ -1,0 +1,272 @@
+import "server-only";
+
+import { and, between, eq, inArray, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
+import { db } from "@/db";
+import {
+  analiseGerencial,
+  cancelamentos,
+  departamentos,
+  despesa,
+  filiais,
+  grupos,
+  parfil,
+  previsaoDia,
+  subgrupos,
+} from "@/db/schema";
+import { daysInMonth, eachDay, firstDayOfMonth } from "../date";
+import type {
+  DepartamentosResponse,
+  Dia,
+  FiliaisResponse,
+  LinhaNivel,
+  MetaResponse,
+  Nivel,
+  Origem,
+  Periodo,
+} from "../types";
+
+// Dados D-1 (carga noturna): cache de horas, invalidável pela tag.
+const CACHE_TAG = "painel-executivo";
+
+function vendaPorOrigem(origem: Origem) {
+  if (origem === "pdv") return analiseGerencial.totalPDV;
+  if (origem === "faturamento") return analiseGerencial.totalFaturamento;
+  return analiseGerencial.totalVenda;
+}
+
+function custoPorOrigem(origem: Origem) {
+  if (origem === "pdv") return analiseGerencial.totalCustoPDV;
+  if (origem === "faturamento") return analiseGerencial.totalCustoFaturamento;
+  return analiseGerencial.totalCusto;
+}
+
+const sum = (column: AnyColumn | SQL) =>
+  sql<number>`coalesce(sum(${column}), 0)`.mapWith(Number);
+
+const isoDate = (expression: SQL) => sql<string>`date_format(${expression}, '%Y-%m-%d')`;
+
+export async function getFiliais(): Promise<FiliaisResponse> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAG);
+
+  const comMovimento = db
+    .selectDistinct({ filial: analiseGerencial.filial })
+    .from(analiseGerencial)
+    .as("com_movimento");
+
+  const [lista, [limites]] = await Promise.all([
+    db
+      .select({
+        codigo: comMovimento.filial,
+        descricao: sql<string>`coalesce(trim(${filiais.descricao}), concat('Filial ', ${comMovimento.filial}))`,
+      })
+      .from(comMovimento)
+      .leftJoin(filiais, eq(filiais.codigo, comMovimento.filial))
+      .orderBy(comMovimento.filial),
+    db
+      .select({
+        dataMinima: isoDate(sql`min(${analiseGerencial.data})`),
+        dataMaxima: isoDate(sql`max(${analiseGerencial.data})`),
+      })
+      .from(analiseGerencial),
+  ]);
+
+  return {
+    filiais: lista,
+    dataMinima: limites?.dataMinima ?? null,
+    dataMaxima: limites?.dataMaxima ?? null,
+  };
+}
+
+/** Série diária de todas as métricas do resumo; dias sem carga ficam `null`. */
+export async function getDias(
+  periodo: Periodo,
+  lojas: number[],
+  origem: Origem,
+): Promise<Dia[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAG);
+
+  const { inicio, fim } = periodo;
+
+  const [vendas, pdv, cancelados, despesas] = await Promise.all([
+    db
+      .select({
+        data: analiseGerencial.data,
+        venda: sum(vendaPorOrigem(origem)),
+        custo: sum(custoPorOrigem(origem)),
+        compra: sum(analiseGerencial.totalCompra),
+      })
+      .from(analiseGerencial)
+      .where(
+        and(
+          inArray(analiseGerencial.filial, lojas),
+          between(analiseGerencial.data, inicio, fim),
+        ),
+      )
+      .groupBy(analiseGerencial.data),
+    db
+      .select({
+        data: parfil.dataVenda,
+        venda: sum(parfil.totvrvenda),
+        tickets: sum(parfil.nclientes),
+      })
+      .from(parfil)
+      .where(and(inArray(parfil.filial, lojas), between(parfil.dataVenda, inicio, fim)))
+      .groupBy(parfil.dataVenda),
+    db
+      .select({
+        data: cancelamentos.dataCancelamento,
+        valor: sum(cancelamentos.valorTotalCancelamento),
+      })
+      .from(cancelamentos)
+      .where(
+        and(
+          inArray(cancelamentos.filial, lojas),
+          between(cancelamentos.dataCancelamento, inicio, fim),
+        ),
+      )
+      .groupBy(cancelamentos.dataCancelamento),
+    db
+      .select({ data: despesa.dataDespesa, valor: sum(despesa.valor) })
+      .from(despesa)
+      .where(and(inArray(despesa.filial, lojas), between(despesa.dataDespesa, inicio, fim)))
+      .groupBy(despesa.dataDespesa),
+  ]);
+
+  const vendasPorDia = new Map(vendas.map((v) => [v.data, v]));
+  const pdvPorDia = new Map(pdv.map((p) => [p.data, p]));
+  const cancelPorDia = new Map(cancelados.map((c) => [c.data, c.valor]));
+  const despesaPorDia = new Map(despesas.map((d) => [d.data, d.valor]));
+
+  return eachDay(periodo).map((data) => {
+    const v = vendasPorDia.get(data);
+    const p = pdvPorDia.get(data);
+    return {
+      data,
+      venda: v?.venda ?? null,
+      custo: v?.custo ?? null,
+      compra: v?.compra ?? null,
+      vendaPdv: p?.venda ?? null,
+      tickets: p?.tickets ?? null,
+      cancelamentos: cancelPorDia.get(data) ?? null,
+      despesas: despesaPorDia.get(data) ?? null,
+    };
+  });
+}
+
+const dataPrevisao = sql`str_to_date(concat(${previsaoDia.ano}, '-', ${previsaoDia.mes}, '-', ${previsaoDia.codigoDia}), '%Y-%m-%d')`;
+
+export async function getMeta(
+  periodo: Periodo,
+  lojas: number[],
+  origem: Origem,
+): Promise<MetaResponse> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAG);
+
+  const mes = periodo.fim.slice(0, 7);
+  const [ano, mesNumero] = mes.split("-").map(Number);
+  const lojasMeta = inArray(previsaoDia.codigoFilial, lojas);
+
+  const [[metaPeriodo], [metaMes], [realizado]] = await Promise.all([
+    db
+      .select({ valor: sum(previsaoDia.previsaoVenda) })
+      .from(previsaoDia)
+      .where(and(lojasMeta, between(dataPrevisao, periodo.inicio, periodo.fim))),
+    db
+      .select({ valor: sum(previsaoDia.previsaoVenda) })
+      .from(previsaoDia)
+      .where(and(lojasMeta, eq(previsaoDia.ano, ano), eq(previsaoDia.mes, mesNumero))),
+    db
+      .select({ valor: sum(vendaPorOrigem(origem)) })
+      .from(analiseGerencial)
+      .where(
+        and(
+          inArray(analiseGerencial.filial, lojas),
+          between(analiseGerencial.data, firstDayOfMonth(periodo.fim), periodo.fim),
+        ),
+      ),
+  ]);
+
+  return {
+    metaPeriodo: metaPeriodo?.valor ?? 0,
+    mes,
+    metaMes: metaMes?.valor ?? 0,
+    realizadoMes: realizado?.valor ?? 0,
+    diasRestantes: daysInMonth(periodo.fim) - Number(periodo.fim.slice(8, 10)),
+  };
+}
+
+const niveis = {
+  departamento: { coluna: analiseGerencial.departamento, tabela: departamentos },
+  grupo: { coluna: analiseGerencial.grupo, tabela: grupos },
+  subgrupo: { coluna: analiseGerencial.subgrupo, tabela: subgrupos },
+} as const;
+
+async function compraVendaPorNivel(
+  nivel: Nivel,
+  periodo: Periodo,
+  lojas: number[],
+  origem: Origem,
+) {
+  const { coluna } = niveis[nivel];
+  const filtros: SQL[] = [
+    inArray(analiseGerencial.filial, lojas),
+    between(analiseGerencial.data, periodo.inicio, periodo.fim),
+  ];
+
+  return db
+    .select({
+      codigo: coluna,
+      compra: sum(analiseGerencial.totalCompra),
+      venda: sum(vendaPorOrigem(origem)),
+    })
+    .from(analiseGerencial)
+    .where(and(...filtros))
+    .groupBy(coluna);
+}
+
+export async function getDepartamentos(
+  nivel: Nivel,
+  periodo: Periodo,
+  periodoAnterior: Periodo,
+  lojas: number[],
+  origem: Origem,
+): Promise<DepartamentosResponse> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CACHE_TAG);
+
+  const { tabela } = niveis[nivel];
+  const [atual, anterior, descricoes] = await Promise.all([
+    compraVendaPorNivel(nivel, periodo, lojas, origem),
+    compraVendaPorNivel(nivel, periodoAnterior, lojas, origem),
+    db
+      .select({ codigo: tabela.codigo, descricao: sql<string>`trim(${tabela.descricao})` })
+      .from(tabela),
+  ]);
+
+  const descricaoPorCodigo = new Map(descricoes.map((d) => [d.codigo, d.descricao]));
+  const anteriorPorCodigo = new Map(anterior.map((a) => [a.codigo, a]));
+  const codigos = new Set([...atual.map((a) => a.codigo), ...anterior.map((a) => a.codigo)]);
+  const atualPorCodigo = new Map(atual.map((a) => [a.codigo, a]));
+
+  const linhas: LinhaNivel[] = [...codigos]
+    .map((codigo) => ({
+      codigo,
+      descricao: descricaoPorCodigo.get(codigo) ?? `Código ${codigo}`,
+      compra: atualPorCodigo.get(codigo)?.compra ?? 0,
+      venda: atualPorCodigo.get(codigo)?.venda ?? 0,
+      compraAnterior: anteriorPorCodigo.get(codigo)?.compra ?? 0,
+      vendaAnterior: anteriorPorCodigo.get(codigo)?.venda ?? 0,
+    }))
+    .filter((l) => l.compra || l.venda || l.compraAnterior || l.vendaAnterior)
+    .sort((a, b) => b.venda - a.venda);
+
+  return { linhas };
+}
