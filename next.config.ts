@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ["mysql2"],
+  experimental: {
+    optimizePackageImports: ["@mdi/js"],
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
