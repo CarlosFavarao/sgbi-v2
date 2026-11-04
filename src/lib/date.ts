@@ -117,3 +117,14 @@ export function startOfWeek(iso: string): string {
   const weekday = (parseIso(iso).getUTCDay() + 6) % 7;
   return addDays(iso, -weekday);
 }
+
+/** Meses (YYYY-MM) que o período cobre. */
+export function mesesDoPeriodo(p: Periodo): string[] {
+  const meses: string[] = [];
+  for (let mes = p.inicio.slice(0, 7); mes <= p.fim.slice(0, 7); ) {
+    meses.push(mes);
+    const [a, m] = mes.split("-").map(Number);
+    mes = m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, "0")}`;
+  }
+  return meses;
+}

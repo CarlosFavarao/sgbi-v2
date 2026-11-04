@@ -2,7 +2,7 @@
 
 Registro das decisões já tomadas no SGBI v2 e das perguntas que ainda precisam de resposta. Quando uma pergunta for respondida, preencha a **Resposta** e a data, aplique a mudança e mova o item para a lista de decisões.
 
-Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.md`](painel-executivo-poc.md), [`vendas.md`](vendas.md), [`metas.md`](metas.md) e [`api-externa-mapeamento.md`](api-externa-mapeamento.md).
+Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.md`](painel-executivo-poc.md), [`vendas.md`](vendas.md), [`metas.md`](metas.md), [`financeiro.md`](financeiro.md) e [`api-externa-mapeamento.md`](api-externa-mapeamento.md).
 
 ---
 
@@ -28,6 +28,10 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D28 | **Metas por departamento, grupo e subgrupo** só existem por mês (`previsao_departamento/grupo/subgrupo`); para Dia, Semana e Quinzena a meta mensal é distribuída pela curva da meta diária da loja (`previsao_dia`). O filtro Departamento usa a meta do departamento distribuída da mesma forma (ver P33) | 04/11/2026 |
 | D29 | **Meta de margem** = `previsao_lucro` ÷ `previsao_venda` do nível (ver P38) | 04/11/2026 |
 | D30 | Metas com código que não existe no cadastro aparecem como "Código N (sem cadastro)", em vez de sumirem (ver P36) | 04/11/2026 |
+| D32 | **Financeiro (Fluxo de Caixa): fontes** — entradas = vendas em cartão (`cartoes_vendas`, valor líquido na data de vencimento/liquidação) e contas a receber; saídas = contas a pagar. Referência ("hoje") igual à de Metas: último dia com venda do mês escolhido | 04/11/2026 |
+| D33 | **Situação dos movimentos**: realizado = recebido/pago até a referência (na data da baixa) ou cartão com vencimento até a referência; previsto = em aberto com vencimento depois; vencido = em aberto com vencimento até a referência. Título baixado depois da referência conta como em aberto nela. Datas `0000-00-00` contam como vazias | 04/11/2026 |
+| D34 | **Blocos sem fonte não são inventados**: saldo em caixa, dias de cobertura e saldo por conta aparecem como "não integrado", e um aviso fixo no popup explica as fontes que faltam. "Menor saldo projetado" é o menor fluxo previsto acumulado a partir de zero (sem o saldo de hoje, P42) | 04/11/2026 |
+| D35 | **Categorias**: entradas por empresa de cartão (Visa, Master, vouchers…) e "Clientes (contas a receber)"; saídas em "Despesas" (classificação `D`, como no relatório Análise de Contas do BI antigo) e "Fornecedores (mercadoria)" (P45) | 04/11/2026 |
 
 ### Interface
 
@@ -44,6 +48,7 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D23 | **Vendas: cupons carregam depois**: a consulta no `logpdv` leva de 13 a 17 s por período (ver P23), então é separada da venda. Os cards de cupons e as colunas de cupons da tabela mostram o próprio carregamento; o resto da tela não espera | 04/11/2026 |
 | D24 | **Exportar** gera CSV no formato do Excel em português (";", vírgula decimal), com as linhas expandidas da tabela (ver P31) | 04/11/2026 |
 | D31 | **Tela de Metas**: mesmas convenções das outras telas. Filtros: Mês de referência (meses com venda e meses com meta; os sem meta aparecem como "sem meta"), Filial, Departamento e Origem. Abas Dia, Semana, 1ª e 2ª Quinzena, Mês e Ano, relativas à referência; gráficos, tabela e cards seguem a aba escolhida. Cabe sem rolar em 1536 × 864 (tabela com altura mínima, ver P40) e 1920 × 1080 | 04/11/2026 |
+| D36 | **Tela Financeiro · Fluxo de Caixa**: mesmas convenções das outras telas (filtros Mês de referência e Filial). O gráfico do mês mostra entradas para cima, saídas para baixo e o resultado acumulado em eixo próprio à direita. Cabe sem rolar em 1536 × 864 e 1920 × 1080. As outras abas do módulo do print (Visão Financeira, DRE, DFC, Contas a Pagar e a Receber) não foram feitas (P49) | 04/11/2026 |
 
 ### Projeto
 
@@ -264,6 +269,62 @@ Para caber sem rolar, a tabela de acompanhamento abre com a altura mínima (uma 
 **P41. Seletores dos gráficos e botão "Filtros"** — Negócio
 No print, o gráfico de cumprimento tem um seletor "Mês" e o de departamentos um seletor "Dia"; hoje os dois seguem a aba de período escolhida. O botão "Filtros" do print também não está claro (ver P29).
 - O gráfico de cumprimento deve ter uma visão anual (mês a mês)? O de departamentos precisa de período próprio?
+
+> Resposta: _em aberto_
+
+### Tela Financeiro (Fluxo de Caixa)
+
+**P42. Saldos bancários e contas** — VX / Coordenação
+O banco do SGBI não tem contas bancárias nem saldos. Sem isso ficam indisponíveis: saldo em caixa hoje, dias de cobertura, saldo por conta, saldo acumulado real (o gráfico e o fluxo previsto partem de zero) e caixa líquido.
+- O VX tem esses saldos (API ou tabela)? A carga do headquarter pode trazê-los?
+
+> Resposta: _em aberto_
+
+**P43. Data de entrada dos cartões** — Negócio / VX
+Hoje o valor líquido do cartão entra no vencimento (data de liquidação prevista), e até a referência conta como recebido. A `data_baixa` está vazia em cerca de 32 mil das 69 mil parcelas de homologação.
+- O recebimento deve usar a data de baixa (conciliação) quando existir? Como tratar cartão vencido e não baixado?
+
+> Resposta: _em aberto_
+
+**P44. Vendas à vista (dinheiro, Pix, cheque)** — Coordenação / VX
+As finalizadoras só existem na API do VX (`/consolidado/resumido/vendas/finalizadoras`); o MySQL só tem cartões. Por isso as entradas não incluem dinheiro e Pix, e as categorias do print ("Vendas Dinheiro", "Vendas Pix") não aparecem.
+- Integrar a API no fluxo de caixa? A carga noturna pode gravar as vendas por finalizadora?
+
+> Resposta: _em aberto_
+
+**P45. Categorias de saída** — Negócio
+`contas_pagar` não tem plano de contas: só a classificação (`D` = despesa) e o tipo de entidade (`F`, `E`). O print separa Fornecedores, Pessoal, Tributos, Despesas operacionais, Investimentos e Serviço da dívida. A tabela `despesa` tem tipos (`tipo_despesa`), mas não se sabe se repete os títulos de `contas_pagar`.
+- De onde vem a categoria de cada pagamento? `despesa` e `contas_pagar` se sobrepõem?
+
+> Resposta: _em aberto_
+
+**P46. Status do fluxo previsto** — Negócio
+Hoje: dia com saídas maiores que entradas = Atenção; acumulado negativo = Crítico; resto = Ok.
+- Regra confirmada? Usar um saldo mínimo de segurança?
+
+> Resposta: _em aberto_
+
+**P47. Dados financeiros de homologação** — Qualidade
+Há só 33 contas a pagar (R$ 50,6 mil) e 47 a receber (R$ 31,9 mil), de 13/08 a 20/09/2026, quase todas com data de baixa vazia (aparecem vencidas). Nenhum pagamento realizado em setembro, por isso as saídas do período ficam zeradas. Os cartões vão de agosto a dezembro/2026.
+- Popular títulos com baixas coerentes para validar a tela.
+
+> Resposta: _em aberto_
+
+**P48. Indicadores de caixa** — Negócio
+Calculados hoje: prazos médios de recebimento (cartões: venda → vencimento; clientes: emissão → vencimento) e de pagamento (emissão → vencimento), ponderados pelo valor, nos últimos 90 dias; vencidos em aberto; previstos em 30 dias. Ciclo de caixa, necessidade de capital de giro, caixa líquido e cobertura de despesas dependem de estoque (prazo médio de estoque) e saldo bancário.
+- As definições estão corretas? Há fonte de estoque valorizado para o prazo médio de estoque?
+
+> Resposta: _em aberto_
+
+**P49. Outras abas do módulo Financeiro** — Coordenação
+O print mostra Visão Financeira, DRE Gerencial, DFC, Fluxo de Caixa, Contas a Pagar e Contas a Receber. Só o Fluxo de Caixa foi feito. Existe a `view_dre` (DRE do BI antigo).
+- Quais abas entram e em que ordem?
+
+> Resposta: _em aberto_
+
+**P50. Período e referência do fluxo** — Negócio
+O print usa um período livre (01/10 a 31/10, "Mês atual") e "Hoje". A tela usa o mês de referência e o último dia com venda (D-1), como Metas; o previsto cobre os 30 dias seguintes.
+- O previsto deve partir do dia atual real (o financeiro pode estar mais atualizado que a venda)? 30 dias é o horizonte certo?
 
 > Resposta: _em aberto_
 

@@ -4,6 +4,7 @@ Reescrita do **SGBI** (Business Intelligence do VX) em Next.js 16. Telas prontas
 
 - **Painel Executivo** (`/`): indicadores de venda, margem, despesas, metas, compras e cancelamentos em uma única tela, sem rolagem.
 - **Metas** (`/metas`): cumprimento das metas de venda e de margem por dia, semana, quinzena, mês e ano, com projeção de fechamento e acompanhamento por departamento, grupo e subgrupo.
+- **Financeiro · Fluxo de Caixa** (`/financeiro`): entradas (cartões e contas a receber) e saídas (contas a pagar) realizadas e previstas, compromissos a vencer e prazos médios.
 - **Vendas** (`/vendas`): desempenho comercial por departamento, grupo e subgrupo, cupons e ticket médio, Curva ABC e listas de produtos.
 
 > **Status:** POC em homologação. As decisões tomadas e as perguntas ainda em aberto estão em [`docs/decisoes-e-pendencias.md`](docs/decisoes-e-pendencias.md).
@@ -66,6 +67,7 @@ src/
 │   ├── api/filiais/route.ts     # Filiais e datas carregadas (comum às telas)
 │   ├── layout.tsx, providers.tsx, globals.css (tokens do tema)
 │   ├── page.tsx                 # Painel Executivo
+│   ├── financeiro/page.tsx      # Financeiro · Fluxo de Caixa
 │   ├── metas/page.tsx           # Metas
 │   └── vendas/page.tsx          # Vendas
 ├── components/
@@ -79,6 +81,7 @@ src/
 ├── db/                          # Cliente Drizzle (server-only) e schema
 ├── features/
 │   ├── painel-executivo/
+│   ├── financeiro/
 │   ├── metas/
 │   └── vendas/
 │       ├── server/              # Queries Drizzle com 'use cache' (server-only)
@@ -133,6 +136,7 @@ Tipos: `feat`, `fix`, `docs`, `chore`, `refactor`.
 |---|---|
 | [`docs/decisoes-e-pendencias.md`](docs/decisoes-e-pendencias.md) | Decisões tomadas e pontos de alinhamento em aberto |
 | [`docs/painel-executivo-poc.md`](docs/painel-executivo-poc.md) | Análise do BI antigo, tabelas, fonte de cada dado, riscos e implementação da POC |
+| [`docs/financeiro.md`](docs/financeiro.md) | Fluxo de Caixa: fontes, blocos sem fonte, regras e implementação |
 | [`docs/metas.md`](docs/metas.md) | Tela de Metas: fonte das metas, regras de cálculo, dados de homologação e implementação |
 | [`docs/vendas.md`](docs/vendas.md) | Tela de Vendas: fonte de cada dado, desempenho das consultas e implementação |
 | [`docs/api-externa-mapeamento.md`](docs/api-externa-mapeamento.md) | Rotas da API do VX usadas pelo BI antigo e impacto no v2 |

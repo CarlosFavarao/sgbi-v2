@@ -155,3 +155,54 @@ export const logpdv = mysqlTable(
   },
   (table) => [index("idx_logpdv_filial_data").on(table.filial, table.dataVenda)],
 );
+
+/** Títulos a pagar (só as colunas usadas). Datas vazias vêm como 0000-00-00. */
+export const contasPagar = mysqlTable("contas_pagar", {
+  id: int("id").primaryKey().autoincrement(),
+  codigoFilial: int("codigo_filial"),
+  codigoFornecedor: int("codigo_fornecedor"),
+  nome: varchar("nome", { length: 40 }),
+  observacao: varchar("observacao", { length: 100 }),
+  dataEmissao: date("data_emissao", { mode: "string" }),
+  dataVencimento: date("data_vencimento", { mode: "string" }),
+  dataPagamento: date("data_pagamento", { mode: "string" }),
+  valorPagar: double("valor_pagar"),
+  taxaBoleto: double("taxa_boleto"),
+  valorTotalPagamento: double("valor_total_pagamento"),
+  /** "D" = despesa (como no relatório Análise de Contas do BI antigo). */
+  classificacaoProduto: varchar("classificacao_produto", { length: 1 }),
+});
+
+/** Títulos a receber (crediário, boletos...). */
+export const contasReceber = mysqlTable("contas_receber", {
+  id: int("id").primaryKey().autoincrement(),
+  codigoFilial: int("codigo_filial"),
+  nomeCliente: varchar("nome_cliente", { length: 20 }),
+  dataEmissao: date("data_emissao", { mode: "string" }),
+  dataVencimento: date("data_vencimento", { mode: "string" }),
+  dataRecebimento: date("data_recebimento", { mode: "string" }),
+  valorDocumento: double("valor_documento"),
+  valorRecebido: double("valor_recebido"),
+});
+
+/** Vendas em cartão com data de liquidação (vencimento) por parcela. */
+export const cartoesVendas = mysqlTable("cartoes_vendas", {
+  codigoFilial: int("codigo_filial"),
+  numeroParcela: int("numero_parcela"),
+  valorBruto: double("valor_bruto"),
+  valorLiquido: double("valor_liquido"),
+  dataVenda: date("data_venda", { mode: "string" }),
+  dataVencimento: date("data_vencimento", { mode: "string" }),
+  codigoEmpresa: int("codigo_empresa"),
+});
+
+export const cartoesEmpresas = mysqlTable("cartoes_empresas", {
+  codigoEmpresa: int("codigo_empresa"),
+  descricaoEmpresa: varchar("descricao_empresa", { length: 255 }),
+});
+
+export const fornecedores = mysqlTable("fornecedores", {
+  codigo: int("codigo"),
+  razaoSocial: varchar("razaoSocial", { length: 255 }),
+  nomeFantasia: varchar("nomeFantasia", { length: 255 }),
+});

@@ -4,7 +4,7 @@ import { FiliaisSelect } from "@/components/filtros/filiais-select";
 import { Field } from "@/components/ui/field";
 import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
-import { mesesDoPeriodo } from "../metas";
+import { mesesDoPeriodo } from "@/lib/date";
 import { formatMesAno } from "@/lib/format";
 import type { Filial } from "@/lib/filtros";
 import type { FiltrosMetas, Origem } from "../types";

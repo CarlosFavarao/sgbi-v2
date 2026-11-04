@@ -13,9 +13,9 @@ import {
   previsaoSubgrupo,
   subgrupos,
 } from "@/db/schema";
-import { firstDayOfMonth, lastDayOfMonth } from "@/lib/date";
+import { firstDayOfMonth, lastDayOfMonth, mesesDoPeriodo } from "@/lib/date";
 import type { Origem } from "@/lib/filtros";
-import { mesesDoPeriodo, metaDiariaDoNivel, metaNivelNoPeriodo, type MetaMensal } from "../metas";
+import { metaDiariaDoNivel, metaNivelNoPeriodo, type MetaMensal } from "../metas";
 import type {
   LinhaMetaNivel,
   MetaDia,

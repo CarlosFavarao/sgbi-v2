@@ -72,7 +72,7 @@ export function ResizableRow({
     const top = ref.current?.getBoundingClientRect().top ?? 0;
     // Altura do elemento de baixo + o espaço entre as linhas (gap de 10px).
     const reserva = abaixo?.current ? abaixo.current.getBoundingClientRect().height + 10 : 0;
-    return Math.max(alturaMinima, Math.round(window.innerHeight - top - window.scrollY - MARGEM_INFERIOR - reserva));
+    return Math.max(alturaMinima, Math.floor(window.innerHeight - top - window.scrollY - MARGEM_INFERIOR - reserva));
   }, [abaixo, alturaMinima]);
 
   // Lê o ajuste salvo antes da primeira pintura, para não "pular".

@@ -1,4 +1,4 @@
-import { daysBetween, daysInMonth, lastDayOfMonth } from "@/lib/date";
+import { daysBetween, daysInMonth, lastDayOfMonth, mesesDoPeriodo } from "@/lib/date";
 import type { MetaDia, Periodo } from "./types";
 
 export type MetaMensal = { codigo: number; mes: string; meta: number; metaLucro: number };
@@ -9,17 +9,6 @@ function intersecao(a: Periodo, b: Periodo): Periodo | null {
   const inicio = a.inicio > b.inicio ? a.inicio : b.inicio;
   const fim = a.fim < b.fim ? a.fim : b.fim;
   return inicio <= fim ? { inicio, fim } : null;
-}
-
-/** Meses (YYYY-MM) que o período cobre. */
-export function mesesDoPeriodo(p: Periodo): string[] {
-  const meses: string[] = [];
-  for (let mes = p.inicio.slice(0, 7); mes <= p.fim.slice(0, 7); ) {
-    meses.push(mes);
-    const [a, m] = mes.split("-").map(Number);
-    mes = m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, "0")}`;
-  }
-  return meses;
 }
 
 /** Soma da meta diária no período; null quando nenhum dia do período tem meta cadastrada. */
