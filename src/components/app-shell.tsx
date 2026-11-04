@@ -23,7 +23,8 @@ function NavLinks({ expanded, onNavigate }: { expanded: boolean; onNavigate?: ()
   return (
     <ul className="flex flex-col gap-1">
       {NAV.map((item) => {
-        const active = pathname === item.href;
+        // Telas de um módulo (ex.: /financeiro/dfc) mantêm o item do módulo ativo.
+        const active = item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
           <li key={item.href}>
             <Link

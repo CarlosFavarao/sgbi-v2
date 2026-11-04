@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { formatDecimal, formatMesAno, formatMoeda, formatMoedaCompacta } from "@/lib/format";
 import type { PontoMensal } from "../compute";
-import { NaoIntegrado } from "./nao-integrado";
+import { NaoIntegrado } from "@/components/nao-integrado";
 
 /** Saldo por conta bancária: sem fonte no banco do SGBI (P42). */
 export function SaldoContasCard() {

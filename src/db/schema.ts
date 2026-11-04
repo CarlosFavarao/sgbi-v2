@@ -206,3 +206,18 @@ export const fornecedores = mysqlTable("fornecedores", {
   razaoSocial: varchar("razaoSocial", { length: 255 }),
   nomeFantasia: varchar("nomeFantasia", { length: 255 }),
 });
+
+/**
+ * DRE gerencial mensal por filial, montada pelo VX. `id_geral` é hierárquico:
+ * 2 dígitos = linha principal (01 Receita Bruta... 08 Despesas), 5 = grupo,
+ * 8 = subgrupo de despesa, 13 = item. `periodo` = 1º dia do mês.
+ */
+export const viewDre = mysqlTable("view_dre", {
+  id: int("id").primaryKey().autoincrement(),
+  periodo: date("periodo", { mode: "string" }),
+  filial: int("filial"),
+  idGeral: varchar("id_geral", { length: 13 }),
+  idPrincipal: varchar("id_principal", { length: 255 }),
+  valor: double("valor"),
+  descricao: varchar("descricao", { length: 255 }),
+});

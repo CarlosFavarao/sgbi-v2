@@ -4,6 +4,7 @@ import Icon from "@mdi/react";
 import { mdiDatabaseClockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
+import { ABAS_FINANCEIRO, AbasModulo } from "@/components/abas-modulo";
 import { useAvisos, type Aviso } from "@/components/avisos";
 import { FiliaisSelect } from "@/components/filtros/filiais-select";
 import { Field } from "@/components/ui/field";
@@ -106,14 +107,17 @@ export function Financeiro() {
 
   const cabecalho = (
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight">
-          Financeiro <span className="text-base font-medium text-muted-foreground">· Fluxo de Caixa</span>
-        </h1>
-        <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-          <Icon path={mdiDatabaseClockOutline} size={0.6} aria-hidden />
-          {referencia ? `Referência ${formatData(referencia)}` : "Carregando…"}
-        </p>
+      <div className="flex flex-wrap items-end gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">
+            Financeiro <span className="text-base font-medium text-muted-foreground">· Fluxo de Caixa</span>
+          </h1>
+          <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            <Icon path={mdiDatabaseClockOutline} size={0.6} aria-hidden />
+            {referencia ? `Referência ${formatData(referencia)}` : "Carregando…"}
+          </p>
+        </div>
+        <AbasModulo abas={ABAS_FINANCEIRO} label="Telas do Financeiro" />
       </div>
       {filiaisQuery.data && filtros.mes ? (
         <div className="flex flex-wrap items-end gap-3">
