@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
 type Tamanho = {
   altura: number;
@@ -9,7 +9,7 @@ type Tamanho = {
   alturaManual: boolean;
 };
 
-const MIN_ALTURA = 160;
+const MIN_ALTURA_PADRAO = 160;
 const MIN_ESQUERDA = 35;
 const MAX_ESQUERDA = 80;
 const PASSO_TECLADO = { altura: 24, esquerda: 2 };
@@ -38,7 +38,8 @@ const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min)
  * Dois painéis lado a lado, redimensionáveis pelo usuário:
  * - alça vertical entre eles ajusta a largura (em % da linha);
  * - alça horizontal abaixo ajusta a altura dos dois.
- * Sem ajuste salvo, a altura ocupa o resto da tela (sem rolar a página).
+ * Sem ajuste salvo, a altura ocupa o resto da tela (sem rolar a página),
+ * descontando o conteúdo de `abaixo` quando há outra linha depois desta.
  * Abaixo de `xl` os painéis empilham com altura fixa e sem alças.
  */
 export function ResizableRow({
@@ -46,12 +47,18 @@ export function ResizableRow({
   esquerda,
   direita,
   larguraInicial = 66,
+  abaixo,
+  alturaMinima = MIN_ALTURA_PADRAO,
 }: {
   storageKey: string;
   esquerda: ReactNode;
   direita: ReactNode;
   /** % da largura para o painel da esquerda. */
   larguraInicial?: number;
+  /** Elemento logo abaixo da linha, que também precisa caber na tela. */
+  abaixo?: RefObject<HTMLElement | null>;
+  /** Altura mínima (px); em telas baixas a página rola em vez de esmagar a linha. */
+  alturaMinima?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [tamanho, setTamanho] = useState<Tamanho>({
@@ -62,8 +69,10 @@ export function ResizableRow({
 
   const alturaPelaTela = useCallback(() => {
     const top = ref.current?.getBoundingClientRect().top ?? 0;
-    return Math.max(MIN_ALTURA, Math.round(window.innerHeight - top - window.scrollY - MARGEM_INFERIOR));
-  }, []);
+    // Altura do elemento de baixo + o espaço entre as linhas (gap de 10px).
+    const reserva = abaixo?.current ? abaixo.current.getBoundingClientRect().height + 10 : 0;
+    return Math.max(alturaMinima, Math.round(window.innerHeight - top - window.scrollY - MARGEM_INFERIOR - reserva));
+  }, [abaixo, alturaMinima]);
 
   // Lê o ajuste salvo antes da primeira pintura, para não "pular".
   useLayoutEffect(() => {
@@ -104,7 +113,7 @@ export function ResizableRow({
       atual =
         eixo === "x"
           ? { ...base, esquerda: clamp(((e.clientX - linha.left) / linha.width) * 100, MIN_ESQUERDA, MAX_ESQUERDA) }
-          : { ...base, altura: Math.max(MIN_ALTURA, Math.round(base.altura + e.clientY - inicio.clientY)), alturaManual: true };
+          : { ...base, altura: Math.max(alturaMinima, Math.round(base.altura + e.clientY - inicio.clientY)), alturaManual: true };
       setTamanho(atual);
     };
     const soltar = () => {
@@ -124,7 +133,7 @@ export function ResizableRow({
     const t =
       eixo === "x"
         ? { ...tamanho, esquerda: clamp(tamanho.esquerda + sinal * PASSO_TECLADO.esquerda, MIN_ESQUERDA, MAX_ESQUERDA) }
-        : { ...tamanho, altura: Math.max(MIN_ALTURA, tamanho.altura + sinal * PASSO_TECLADO.altura), alturaManual: true };
+        : { ...tamanho, altura: Math.max(alturaMinima, tamanho.altura + sinal * PASSO_TECLADO.altura), alturaManual: true };
     setTamanho(t);
     salvar(storageKey, t);
   };
@@ -170,7 +179,7 @@ export function ResizableRow({
         aria-orientation="horizontal"
         aria-label="Ajustar altura dos painéis (duplo clique restaura)"
         aria-valuenow={tamanho.altura}
-        aria-valuemin={MIN_ALTURA}
+        aria-valuemin={alturaMinima}
         tabIndex={0}
         onPointerDown={arrastar("y")}
         onKeyDown={teclado("y")}

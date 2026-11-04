@@ -14,11 +14,9 @@ import {
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
-import { evolucao, type PontoEvolucao } from "../compute";
-import { formatDiaMes, formatMesAno } from "../format";
-import type { Granularidade, ResumoResponse } from "../types";
-
-type Medida = "venda" | "margem";
+import type { Granularidade } from "@/lib/filtros";
+import { formatDiaMes, formatMesAno } from "@/lib/format";
+import type { PontoComparativo } from "@/lib/serie";
 
 const GRANULARIDADES: { value: Granularidade; label: string }[] = [
   { value: "dia", label: "Diária" },
@@ -34,37 +32,46 @@ function rotulo(data: string | null, granularidade: Granularidade) {
 }
 
 /**
- * Período atual (linha) sobre o período anterior (barras claras), mesma escala.
- * As duas séries medem a mesma coisa: um único eixo Y.
+ * Período atual (linha) sobre o período de comparação (barras claras), mesma
+ * escala. As duas séries medem a mesma coisa: um único eixo Y. O card tem o
+ * seletor de agrupamento (diário, semanal, mensal).
  */
 export function EvolucaoChart({
   titulo,
-  medida,
+  nomeAtual,
   cor,
   formatValor,
   formatEixo,
-  resumo,
+  larguraEixo = 84,
+  eixoDesdeZero = false,
+  pontos,
   carregando,
+  className = "",
+  alturaGrafico = "h-44",
 }: {
   titulo: string;
-  medida: Medida;
+  /** Legenda da série atual (ex.: "Venda atual"). */
+  nomeAtual: string;
   /** Cor da série (token CSS, ex.: var(--chart-1)). */
   cor: string;
   formatValor: (value: number) => string;
   formatEixo: (value: number) => string;
-  resumo: ResumoResponse | undefined;
+  larguraEixo?: number;
+  /** Eixo Y começa em zero (ex.: percentuais). */
+  eixoDesdeZero?: boolean;
+  /** Pontos já agrupados na granularidade escolhida no card. */
+  pontos: (granularidade: Granularidade) => PontoComparativo[];
   carregando: boolean;
+  className?: string;
+  /** Altura da área do gráfico (classe Tailwind). */
+  alturaGrafico?: string;
 }) {
   const [granularidade, setGranularidade] = useState<Granularidade>("dia");
-  const dados = resumo ? evolucao(resumo, granularidade) : [];
-  const atualKey = `${medida}Atual` as const;
-  const anteriorKey = `${medida}Anterior` as const;
-  const temDados = dados.some((d) => !!d[atualKey] || !!d[anteriorKey]);
-
-  const nomeAtual = medida === "venda" ? "Venda atual" : "Margem atual";
+  const dados = pontos(granularidade);
+  const temDados = dados.some((d) => !!d.atual || !!d.anterior);
 
   return (
-    <Card className="min-w-0">
+    <Card className={`min-w-0 ${className}`}>
       <CardHeader>
         <div>
           <CardTitle>{titulo}</CardTitle>
@@ -88,7 +95,7 @@ export function EvolucaoChart({
         />
       </CardHeader>
 
-      <div className="relative h-44 px-1 pb-2 pt-1" aria-busy={carregando}>
+      <div className={`relative ${alturaGrafico} px-1 pb-2 pt-1`} aria-busy={carregando}>
         {carregando && !temDados ? (
           <div className="h-full" />
         ) : !temDados ? (
@@ -112,16 +119,15 @@ export function EvolucaoChart({
                 tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
-                width={medida === "venda" ? 84 : 44}
-                domain={medida === "margem" ? [0, "auto"] : undefined}
+                width={larguraEixo}
+                domain={eixoDesdeZero ? [0, "auto"] : undefined}
               />
               <Tooltip
                 cursor={{ fill: "var(--muted)", opacity: 0.35 }}
                 content={({ active, payload }) => {
-                  const ponto = payload?.[0]?.payload as PontoEvolucao | undefined;
+                  const ponto = payload?.[0]?.payload as PontoComparativo | undefined;
                   if (!active || !ponto) return null;
-                  const atual = ponto[atualKey];
-                  const anterior = ponto[anteriorKey];
+                  const { atual, anterior } = ponto;
                   return (
                     <div className="min-w-44 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-lg">
                       <div className="flex items-center justify-between gap-4">
@@ -147,7 +153,7 @@ export function EvolucaoChart({
                 }}
               />
               <Bar
-                dataKey={anteriorKey}
+                dataKey="anterior"
                 name="Período anterior"
                 fill={cor}
                 fillOpacity={0.28}
@@ -156,7 +162,7 @@ export function EvolucaoChart({
                 isAnimationActive={false}
               />
               <Line
-                dataKey={atualKey}
+                dataKey="atual"
                 name={nomeAtual}
                 type="monotone"
                 stroke={cor}

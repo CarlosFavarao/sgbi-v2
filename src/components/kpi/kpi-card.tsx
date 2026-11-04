@@ -2,7 +2,7 @@ import Icon from "@mdi/react";
 import { mdiArrowDownBold, mdiArrowUpBold, mdiInformationOutline, mdiMinus } from "@mdi/js";
 import type { ReactNode } from "react";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
-import { formatPontos, formatVariacao } from "../format";
+import { formatPontos, formatVariacao } from "@/lib/format";
 
 export type Tom = "green" | "gold" | "pink" | "blue" | "purple" | "teal" | "orange" | "coral";
 
@@ -94,7 +94,7 @@ export function KpiCard({
       <div className="mt-1 flex flex-1 items-end justify-between gap-2">
         <div className="min-w-0 flex-1">
           {/* Valores com centavos são longos: fonte menor em cards estreitos (container query). */}
-          <div className="truncate text-base font-bold tabular-nums tracking-tight @[14rem]:text-lg @[16rem]:text-xl">
+          <div className="truncate text-sm font-bold tabular-nums tracking-tight @[12rem]:text-base @[14rem]:text-lg @[16rem]:text-xl">
             {valor}
           </div>
           <div className="flex min-h-4 min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">

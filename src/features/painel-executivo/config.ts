@@ -1,5 +1,3 @@
-import type { Periodo } from "./types";
-
 /**
  * Regras de negócio ainda provisórias (decisão 1 em docs/painel-executivo-poc.md).
  * Ajuste aqui quando a área de negócio definir os valores.
@@ -24,8 +22,4 @@ export const PAINEL_CONFIG = {
   },
 } as const;
 
-/**
- * Período inicial da tela. Em homologação os dados completos mais recentes são
- * de julho/2026; troque por "mês atual" quando a carga estiver em dia.
- */
-export const PERIODO_PADRAO: Periodo = { inicio: "2026-07-01", fim: "2026-07-31" };
+export { PERIODO_PADRAO } from "@/lib/config";

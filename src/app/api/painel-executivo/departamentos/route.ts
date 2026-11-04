@@ -7,7 +7,7 @@ import {
   parseOrigem,
   parsePeriodo,
   parsePeriodoComparacao,
-} from "@/features/painel-executivo/server/params";
+} from "@/server/params";
 
 export async function GET(request: NextRequest) {
   return handle(() => {
@@ -20,5 +20,5 @@ export async function GET(request: NextRequest) {
       parseFiliais(params),
       parseOrigem(params),
     );
-  });
+  }, "painel-executivo");
 }

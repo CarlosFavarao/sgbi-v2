@@ -3,7 +3,7 @@ import { mdiCalendarMonthOutline, mdiChartBar } from "@mdi/js";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { percentual } from "../compute";
-import { formatMesAno, formatMoeda, formatPercentual } from "../format";
+import { formatMesAno, formatMoeda, formatPercentual } from "@/lib/format";
 import type { MetaResponse } from "../types";
 
 export function MetaAcumulado({

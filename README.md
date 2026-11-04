@@ -1,6 +1,9 @@
 # SGBI v2
 
-Reescrita do **SGBI** (Business Intelligence do VX) em Next.js 16. A primeira entrega é uma POC da tela **Painel Executivo**, que reúne em uma única tela, sem rolagem, os indicadores de venda, margem, despesas, metas, compras e cancelamentos.
+Reescrita do **SGBI** (Business Intelligence do VX) em Next.js 16. Telas prontas:
+
+- **Painel Executivo** (`/`): indicadores de venda, margem, despesas, metas, compras e cancelamentos em uma única tela, sem rolagem.
+- **Vendas** (`/vendas`): desempenho comercial por departamento, grupo e subgrupo, cupons e ticket médio, Curva ABC e listas de produtos.
 
 > **Status:** POC em homologação. As decisões tomadas e as perguntas ainda em aberto estão em [`docs/decisoes-e-pendencias.md`](docs/decisoes-e-pendencias.md).
 
@@ -59,39 +62,45 @@ O `.env.local` não é versionado. As variáveis são lidas só no servidor (`sr
 src/
 ├── app/
 │   ├── api/<tela>/**/route.ts   # Route Handlers: validam os parâmetros e chamam server/
+│   ├── api/filiais/route.ts     # Filiais e datas carregadas (comum às telas)
 │   ├── layout.tsx, providers.tsx, globals.css (tokens do tema)
-│   └── page.tsx                 # Painel Executivo
+│   ├── page.tsx                 # Painel Executivo
+│   └── vendas/page.tsx          # Vendas
 ├── components/
 │   ├── app-shell.tsx            # Barra lateral recolhível e menu do celular
 │   ├── avisos.tsx               # Botão de avisos da barra lateral (useAvisos)
-│   └── ui/                      # Card, Select, Popover, Checkbox, DateRangePicker,
+│   ├── filtros/                 # Barra de filtros e seletor de filiais
+│   ├── kpi/                     # Card de KPI, variação e minigráfico
+│   ├── charts/                  # Gráfico de evolução (atual × comparação)
+│   └── ui/                      # Card, Select, Popover, Dialog, DateRangePicker,
 │                                # LoadingOverlay, ResizableRow...
 ├── db/                          # Cliente Drizzle (server-only) e schema
 ├── features/
-│   └── painel-executivo/
+│   ├── painel-executivo/
+│   └── vendas/
 │       ├── server/              # Queries Drizzle com 'use cache' (server-only)
 │       ├── queries.ts           # queryOptions do React Query
-│       ├── compute.ts           # Cálculos puros (KPIs, agregações, situação, alertas)
-│       ├── config.ts            # Regras de negócio ajustáveis (limites)
-│       ├── date.ts, format.ts   # Datas e formatação pt-BR
+│       ├── compute.ts           # Cálculos puros da tela
+│       ├── config.ts            # Regras de negócio ajustáveis
 │       └── components/
-└── lib/env.ts                   # Variáveis de ambiente (server-only)
+├── lib/                         # Datas, formatação, cálculos, tipos dos filtros, API, CSV
+└── server/                      # Validação de parâmetros e consultas comuns (server-only)
 docs/                            # Análises, decisões e mapeamentos
 ```
 
 ### Fluxo dos dados
 
 ```
-Componente (useQuery) → /api/painel-executivo/... (route.ts) → server/data.ts ('use cache') → MySQL
+Componente (useQuery) → /api/<tela>/... (route.ts) → server/data.ts ('use cache') → MySQL
 ```
 
 - O banco tem dados **fechados até ontem** (D-1), carregados de madrugada pelo processo headquarter. Por isso as consultas ficam em cache no servidor (`cacheLife('hours')`).
-- Cada fonte de dados é uma consulta separada (`/series/[fonte]`), então cada card carrega de forma independente e mostra o próprio indicador de carregamento.
+- Cada fonte de dados é uma consulta separada (`/series/[fonte]`), então cada card carrega de forma independente e mostra o próprio indicador de carregamento. As consultas lentas no `logpdv` (cupons) também são separadas e não atrasam o resto da tela.
 - O `next build` não consulta o banco, porque o build da imagem Docker não tem acesso a ele.
 
 ## Convenções
 
-- **Uma pasta por tela** em `src/features/<tela>/`, com a mesma divisão do Painel Executivo.
+- **Uma pasta por tela** em `src/features/<tela>/`, com a mesma divisão do Painel Executivo. O que for usado por mais de uma tela fica em `src/lib/`, `src/components/` ou `src/server/`.
 - **Visual do BI antigo:** azul `#4B8CFF`, cards `rounded-2xl`, fonte Inter. Use sempre as classes dos tokens (`bg-card`, `text-muted-foreground`...), nunca cores fixas, para funcionar nos dois temas.
 - **Layout compacto:** a tela deve caber sem rolar em 1536 × 864. Verifique também em 1280, 1366 e 1920 px de largura.
 - **Valores com 2 casas decimais** (moeda, %, p.p.) via `format.ts`.
@@ -121,9 +130,11 @@ Tipos: `feat`, `fix`, `docs`, `chore`, `refactor`.
 |---|---|
 | [`docs/decisoes-e-pendencias.md`](docs/decisoes-e-pendencias.md) | Decisões tomadas e pontos de alinhamento em aberto |
 | [`docs/painel-executivo-poc.md`](docs/painel-executivo-poc.md) | Análise do BI antigo, tabelas, fonte de cada dado, riscos e implementação da POC |
+| [`docs/vendas.md`](docs/vendas.md) | Tela de Vendas: fonte de cada dado, desempenho das consultas e implementação |
 | [`docs/api-externa-mapeamento.md`](docs/api-externa-mapeamento.md) | Rotas da API do VX usadas pelo BI antigo e impacto no v2 |
 
 ## Problemas conhecidos
 
 - **CSS desatualizado no `next dev`:** às vezes o Turbopack continua servindo uma versão antiga do `globals.css`. Pare o servidor, apague `.next/dev/cache/turbopack` e suba de novo.
 - **Homologação:** metas e despesas ainda não cobrem o período com vendas, e a API do VX não tem vendas do dia. Os detalhes estão em `docs/painel-executivo-poc.md`, seção 4.
+- **Cupons (tela de Vendas):** a primeira consulta de cada filtro no `logpdv` leva de 13 a 17 s; depois fica em cache (P23 em `docs/decisoes-e-pendencias.md`).

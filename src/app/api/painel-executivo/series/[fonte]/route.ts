@@ -1,13 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getSerie } from "@/features/painel-executivo/server/data";
-import {
-  handle,
-  parseFiliais,
-  parseFonte,
-  parseOrigem,
-  parsePeriodo,
-  parsePeriodoComparacao,
-} from "@/features/painel-executivo/server/params";
+import { parseFonte } from "@/features/painel-executivo/server/params";
+import { handle, parseFiliais, parseOrigem, parsePeriodo, parsePeriodoComparacao } from "@/server/params";
 import type { SerieResponse } from "@/features/painel-executivo/types";
 
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/painel-executivo/series/[fonte]">) {
@@ -25,5 +19,5 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/painel-e
       getSerie(fonte, anterior, filiais, origem),
     ]);
     return { atual, anterior: comparacao };
-  });
+  }, "painel-executivo");
 }

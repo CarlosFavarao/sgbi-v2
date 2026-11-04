@@ -8,10 +8,10 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/segmented";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { calcularLinha, type LinhaCalculada, type Situacao } from "../compute";
-import { formatMoeda, formatPercentual, formatPontos } from "../format";
+import { formatMoeda, formatPercentual, formatPontos } from "@/lib/format";
 import { painelQueries } from "../queries";
 import type { Filtros, Nivel } from "../types";
-import { Delta } from "./kpi-card";
+import { Delta } from "@/components/kpi/kpi-card";
 
 const NIVEIS: { value: Nivel; label: string }[] = [
   { value: "departamento", label: "Departamento" },

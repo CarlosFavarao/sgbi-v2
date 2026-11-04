@@ -1,14 +1,17 @@
 "use client";
 
 import Icon from "@mdi/react";
-import { mdiClose, mdiMenu, mdiMenuOpen, mdiViewDashboardOutline } from "@mdi/js";
+import { mdiCartOutline, mdiClose, mdiMenu, mdiMenuOpen, mdiViewDashboardOutline } from "@mdi/js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { AvisosBotao, AvisosProvider } from "./avisos";
 import { ThemeToggle } from "./theme-toggle";
 
-const NAV = [{ href: "/", label: "Painel Executivo", icon: mdiViewDashboardOutline }];
+const NAV = [
+  { href: "/", label: "Painel Executivo", icon: mdiViewDashboardOutline },
+  { href: "/vendas", label: "Vendas", icon: mdiCartOutline },
+];
 
 const iconButton =
   "flex size-9 shrink-0 items-center justify-center rounded-lg text-header-foreground transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white";

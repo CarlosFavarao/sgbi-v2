@@ -4,7 +4,7 @@ import Icon from "@mdi/react";
 import { mdiChevronDown, mdiStorefrontOutline } from "@mdi/js";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { Filial } from "../types";
+import type { Filial } from "@/lib/filtros";
 
 export function FiliaisSelect({
   filiais,

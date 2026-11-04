@@ -45,16 +45,21 @@ export function formatPercentual(value: number | null | undefined): string {
   return `${decimal2.format(value)}%`;
 }
 
+/** Variações que arredondam para zero viram 0 (sem "-0,00"). */
+const semZeroNegativo = (value: number) => (Math.abs(value) < 0.005 ? 0 : value);
+
 /** +8,21% */
 export function formatVariacao(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return `${value > 0 ? "+" : ""}${decimal2.format(value)}%`;
+  const v = semZeroNegativo(value);
+  return `${v > 0 ? "+" : ""}${decimal2.format(v)}%`;
 }
 
 /** -0,72 p.p. */
 export function formatPontos(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return `${value > 0 ? "+" : ""}${decimal2.format(value)} p.p.`;
+  const v = semZeroNegativo(value);
+  return `${v > 0 ? "+" : ""}${decimal2.format(v)} p.p.`;
 }
 
 export function formatInteiro(value: number): string {

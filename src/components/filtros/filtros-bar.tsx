@@ -11,9 +11,9 @@ import {
   lastDayOfMonth,
   periodoComparacao,
   resolverAtalhoComparacao,
-} from "../date";
-import { formatData } from "../format";
-import type { AtalhoComparacao, Filial, Filtros, Origem, Periodo } from "../types";
+} from "@/lib/date";
+import { formatData } from "@/lib/format";
+import type { AtalhoComparacao, Filial, Filtros, Origem, Periodo } from "@/lib/filtros";
 import { FiliaisSelect } from "./filiais-select";
 
 const ORIGENS: { value: Origem; label: string }[] = [

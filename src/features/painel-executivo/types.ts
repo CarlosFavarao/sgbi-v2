@@ -1,41 +1,16 @@
-/** "todos" = PDV + Faturamento. */
-export type Origem = "todos" | "pdv" | "faturamento";
+import type { Periodo } from "@/lib/filtros";
 
-export type AtalhoComparacao =
-  | "periodo-anterior"
-  | "semana-anterior"
-  | "mes-anterior"
-  | "trimestre-anterior"
-  | "ano-anterior";
-
-/**
- * Atalho (acompanha o Período quando ele muda) ou datas escolhidas no calendário.
- * Resolvido em datas por `periodoComparacao` (date.ts).
- */
-export type Comparacao = { tipo: AtalhoComparacao } | { tipo: "personalizado"; periodo: Periodo };
-
-export type Nivel = "departamento" | "grupo" | "subgrupo";
-
-export type Granularidade = "dia" | "semana" | "mes";
-
-/** Datas sempre em ISO `YYYY-MM-DD`. */
-export type Periodo = { inicio: string; fim: string };
-
-export type Filtros = {
-  periodo: Periodo;
-  comparacao: Comparacao;
-  filiais: number[];
-  origem: Origem;
-};
-
-export type Filial = { codigo: number; descricao: string };
-
-export type FiliaisResponse = {
-  filiais: Filial[];
-  /** Primeiro e último dia com venda na analise gerencial. */
-  dataMinima: string | null;
-  dataMaxima: string | null;
-};
+export type {
+  AtalhoComparacao,
+  Comparacao,
+  Filial,
+  FiliaisResponse,
+  Filtros,
+  Granularidade,
+  Nivel,
+  Origem,
+  Periodo,
+} from "@/lib/filtros";
 
 /** Valores de um dia. `null` = sem carga para esse dia. */
 export type Dia = {

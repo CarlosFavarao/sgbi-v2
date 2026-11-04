@@ -133,11 +133,11 @@ Estrutura em `src/features/painel-executivo/`:
 |---|---|
 | `server/data.ts` | Queries Drizzle (server-only) com `'use cache'`, `cacheLife('hours')` e tag `painel-executivo` |
 | `server/params.ts` | Validação dos parâmetros das rotas (400) e tratamento de erro (500) |
-| `src/app/api/painel-executivo/{filiais,series/[fonte],meta,departamentos}` | Route Handlers consumidos pelo React Query |
+| `src/app/api/painel-executivo/{series/[fonte],meta,departamentos}` e `src/app/api/filiais` (comum) | Route Handlers consumidos pelo React Query |
 | `queries.ts` | `queryOptions` do React Query (chaves, `staleTime`, `keepPreviousData`) |
 | `compute.ts` | Cálculos puros: KPIs, agregação dia/semana/mês, situação e alertas |
 | `config.ts` | **Limites da Situação e dos Alertas** e período inicial |
-| `date.ts` / `format.ts` | Datas ISO em UTC e formatação pt-BR |
+| `src/lib/date.ts` / `src/lib/format.ts` (comuns) | Datas ISO em UTC e formatação pt-BR |
 | `components/` | Filtros, cards de KPI, gráficos, meta acumulada, tabela e alertas |
 
 Comportamentos:

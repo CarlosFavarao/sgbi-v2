@@ -7,16 +7,25 @@ import { useMemo, useState } from "react";
 import { useAvisos } from "@/components/avisos";
 import { ResizableRow } from "@/components/ui/resizable-row";
 import { Spinner } from "@/components/ui/spinner";
-import { alertas as gerarAlertas, calcularLinha, combinarSeries, indicadores, totais } from "../compute";
-import { periodoComparacao } from "../date";
+import {
+  alertas as gerarAlertas,
+  calcularLinha,
+  combinarSeries,
+  indicadores,
+  margemDoIntervalo,
+  totais,
+  vendaDoIntervalo,
+} from "../compute";
+import { periodoComparacao } from "@/lib/date";
 import { PERIODO_PADRAO } from "../config";
-import { formatData, formatMoedaCompacta, formatMoeda, formatPercentual } from "../format";
+import { formatData, formatMoedaCompacta, formatMoeda, formatPercentual } from "@/lib/format";
 import { painelQueries } from "../queries";
 import type { Filtros } from "../types";
 import { AlertasList } from "./alertas-list";
 import { DepartamentosTable } from "./departamentos-table";
-import { EvolucaoChart } from "./evolucao-chart";
-import { FiltrosBar } from "./filtros-bar";
+import { EvolucaoChart } from "@/components/charts/evolucao-chart";
+import { evolucaoComparativa } from "@/lib/serie";
+import { FiltrosBar } from "@/components/filtros/filtros-bar";
 import { KpiGrid } from "./kpi-grid";
 import { MetaAcumulado } from "./meta-acumulado";
 
@@ -164,20 +173,22 @@ export function PainelExecutivo() {
         <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-3">
           <EvolucaoChart
             titulo="Evolução da Venda"
-            medida="venda"
+            nomeAtual="Venda atual"
             cor="var(--chart-1)"
             formatValor={formatMoeda}
             formatEixo={formatMoedaCompacta}
-            resumo={resumo}
+            pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, vendaDoIntervalo)}
             carregando={fontesCarregando.vendas}
           />
           <EvolucaoChart
             titulo="Evolução da Margem Bruta"
-            medida="margem"
+            nomeAtual="Margem atual"
             cor="var(--chart-5)"
             formatValor={formatPercentual}
             formatEixo={(v) => `${Math.round(v)}%`}
-            resumo={resumo}
+            larguraEixo={44}
+            eixoDesdeZero
+            pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, margemDoIntervalo)}
             carregando={fontesCarregando.vendas}
           />
           <MetaAcumulado meta={meta.data} carregando={fontesCarregando.meta} />

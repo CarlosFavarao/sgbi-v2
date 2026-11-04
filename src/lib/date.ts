@@ -1,4 +1,4 @@
-import type { AtalhoComparacao, Comparacao, Periodo } from "./types";
+import type { AtalhoComparacao, Comparacao, Periodo } from "./filtros";
 
 // Datas ISO (YYYY-MM-DD) manipuladas em UTC para não depender do fuso.
 

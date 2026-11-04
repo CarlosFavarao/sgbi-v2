@@ -1,8 +1,7 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
-import { periodoComparacao } from "./date";
+import { filiaisQuery, filtrosParams, getJson, STALE_TIME } from "@/lib/api";
 import type {
   DepartamentosResponse,
-  FiliaisResponse,
   Filtros,
   MetaResponse,
   Fonte,
@@ -11,38 +10,11 @@ import type {
 } from "./types";
 
 const BASE = "/api/painel-executivo";
-
-async function get<T>(path: string, params?: Record<string, string>): Promise<T> {
-  const query = params ? `?${new URLSearchParams(params)}` : "";
-  const response = await fetch(`${BASE}${path}${query}`);
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.error ?? "Falha ao carregar os dados.");
-  return body as T;
-}
-
-function toParams(filtros: Filtros) {
-  const comparacao = periodoComparacao(filtros.periodo, filtros.comparacao);
-  return {
-    inicio: filtros.periodo.inicio,
-    fim: filtros.periodo.fim,
-    // O servidor recebe a comparação já resolvida em datas.
-    comparacaoInicio: comparacao.inicio,
-    comparacaoFim: comparacao.fim,
-    filiais: [...filtros.filiais].sort((a, b) => a - b).join(","),
-    origem: filtros.origem,
-  };
-}
-
-// Dados D-1: não precisam ser recarregados durante o uso da tela.
-const STALE_TIME = 10 * 60_000;
+const get = <T,>(path: string, params?: Record<string, string>) => getJson<T>(`${BASE}${path}`, params);
+const toParams = filtrosParams;
 
 export const painelQueries = {
-  filiais: () =>
-    queryOptions({
-      queryKey: ["painel-executivo", "filiais"],
-      queryFn: () => get<FiliaisResponse>("/filiais"),
-      staleTime: Infinity,
-    }),
+  filiais: filiaisQuery,
 
   serie: (filtros: Filtros, fonte: Fonte) => {
     // Só "vendas" depende da origem: as outras fontes não recarregam ao trocá-la.

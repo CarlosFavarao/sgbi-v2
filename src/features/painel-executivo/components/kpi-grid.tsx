@@ -13,10 +13,10 @@ import {
   mdiTagOutline,
 } from "@mdi/js";
 import { diferencaPp, indicadores, percentual, serieDiaria, variacao, type Indicadores } from "../compute";
-import { formatMoeda, formatPercentual } from "../format";
+import { formatMoeda, formatPercentual } from "@/lib/format";
 import type { Fonte, MetaResponse, ResumoResponse } from "../types";
-import { corDoTom, Delta, KpiCard, SemDados } from "./kpi-card";
-import { Sparkline } from "./sparkline";
+import { corDoTom, Delta, KpiCard, SemDados } from "@/components/kpi/kpi-card";
+import { Sparkline } from "@/components/kpi/sparkline";
 
 function Vs({ children }: { children: React.ReactNode }) {
   return <span className="whitespace-nowrap tabular-nums">vs {children}</span>;

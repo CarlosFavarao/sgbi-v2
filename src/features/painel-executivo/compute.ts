@@ -1,7 +1,8 @@
+import { diferencaPp, percentual, variacao } from "@/lib/calc";
 import { PAINEL_CONFIG } from "./config";
-import { eachDay, startOfWeek } from "./date";
-import { formatDecimal, formatMoeda } from "./format";
-import type { Dia, Granularidade, LinhaNivel, Periodo, PontoSerie, ResumoResponse, SerieResponse } from "./types";
+import { eachDay } from "@/lib/date";
+import { formatDecimal, formatMoeda } from "@/lib/format";
+import type { Dia, LinhaNivel, Periodo, PontoSerie, ResumoResponse, SerieResponse } from "./types";
 
 type Campo = Exclude<keyof Dia, "data">;
 
@@ -70,21 +71,7 @@ export function totais(dias: Dia[]): Totais {
   return result;
 }
 
-/** a / b × 100, ou null quando o divisor é zero. */
-export function percentual(a: number, b: number): number | null {
-  return b ? (a / b) * 100 : null;
-}
-
-/** Variação % de `atual` sobre `anterior`. */
-export function variacao(atual: number | null, anterior: number | null): number | null {
-  if (atual == null || anterior == null || !anterior) return null;
-  return ((atual - anterior) / Math.abs(anterior)) * 100;
-}
-
-export function diferencaPp(atual: number | null, anterior: number | null): number | null {
-  if (atual == null || anterior == null) return null;
-  return atual - anterior;
-}
+export { diferencaPp, percentual, variacao };
 
 export type Indicadores = {
   venda: number;
@@ -140,56 +127,15 @@ export function serieDiaria(
   }));
 }
 
-export type PontoEvolucao = {
-  /** Rótulo do eixo X (início do intervalo do período atual). */
-  chave: string;
-  dataAtual: string | null;
-  dataAnterior: string | null;
-  vendaAtual: number | null;
-  vendaAnterior: number | null;
-  margemAtual: number | null;
-  margemAnterior: number | null;
-};
-
-function chaveDe(data: string, granularidade: Granularidade) {
-  if (granularidade === "semana") return startOfWeek(data);
-  if (granularidade === "mes") return data.slice(0, 7);
-  return data;
+/** Medidas do gráfico de evolução: null quando nenhum dia do intervalo tem venda carregada. */
+export function vendaDoIntervalo(dias: Dia[]): number | null {
+  const t = totais(dias);
+  return t.cobertura.venda ? t.venda : null;
 }
 
-function agrupar(dias: Dia[], granularidade: Granularidade) {
-  const grupos = new Map<string, Dia[]>();
-  for (const dia of dias) {
-    const chave = chaveDe(dia.data, granularidade);
-    grupos.set(chave, [...(grupos.get(chave) ?? []), dia]);
-  }
-  return [...grupos.entries()].map(([chave, itens]) => {
-    const t = totais(itens);
-    const temVenda = t.cobertura.venda > 0;
-    return {
-      chave,
-      inicio: itens[0].data,
-      venda: temVenda ? t.venda : null,
-      margem: temVenda ? percentual(t.venda - t.custo, t.venda) : null,
-    };
-  });
-}
-
-/** Atual e anterior alinhados pela posição do intervalo (1º dia com 1º dia...). */
-export function evolucao(resumo: ResumoResponse, granularidade: Granularidade): PontoEvolucao[] {
-  const atual = agrupar(resumo.atual.dias, granularidade);
-  const anterior = agrupar(resumo.anterior.dias, granularidade);
-  const tamanho = Math.max(atual.length, anterior.length);
-
-  return Array.from({ length: tamanho }, (_, i) => ({
-    chave: atual[i]?.inicio ?? anterior[i].inicio,
-    dataAtual: atual[i]?.inicio ?? null,
-    dataAnterior: anterior[i]?.inicio ?? null,
-    vendaAtual: atual[i]?.venda ?? null,
-    vendaAnterior: anterior[i]?.venda ?? null,
-    margemAtual: atual[i]?.margem ?? null,
-    margemAnterior: anterior[i]?.margem ?? null,
-  }));
+export function margemDoIntervalo(dias: Dia[]): number | null {
+  const t = totais(dias);
+  return t.cobertura.venda ? percentual(t.venda - t.custo, t.venda) : null;
 }
 
 export type Situacao = "bom" | "atencao" | "critico";

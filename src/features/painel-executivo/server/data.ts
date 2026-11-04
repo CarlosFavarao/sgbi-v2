@@ -8,16 +8,14 @@ import {
   cancelamentos,
   departamentos,
   despesa,
-  filiais,
   grupos,
   parfil,
   previsaoDia,
   subgrupos,
 } from "@/db/schema";
-import { daysInMonth, firstDayOfMonth } from "../date";
+import { daysInMonth, firstDayOfMonth } from "@/lib/date";
 import type {
   DepartamentosResponse,
-  FiliaisResponse,
   Fonte,
   LinhaNivel,
   MetaResponse,
@@ -44,42 +42,6 @@ function custoPorOrigem(origem: Origem) {
 
 const sum = (column: AnyColumn | SQL) =>
   sql<number>`coalesce(sum(${column}), 0)`.mapWith(Number);
-
-const isoDate = (expression: SQL) => sql<string>`date_format(${expression}, '%Y-%m-%d')`;
-
-export async function getFiliais(): Promise<FiliaisResponse> {
-  "use cache";
-  cacheLife("hours");
-  cacheTag(CACHE_TAG);
-
-  const comMovimento = db
-    .selectDistinct({ filial: analiseGerencial.filial })
-    .from(analiseGerencial)
-    .as("com_movimento");
-
-  const [lista, [limites]] = await Promise.all([
-    db
-      .select({
-        codigo: comMovimento.filial,
-        descricao: sql<string>`coalesce(trim(${filiais.descricao}), concat('Filial ', ${comMovimento.filial}))`,
-      })
-      .from(comMovimento)
-      .leftJoin(filiais, eq(filiais.codigo, comMovimento.filial))
-      .orderBy(comMovimento.filial),
-    db
-      .select({
-        dataMinima: isoDate(sql`min(${analiseGerencial.data})`),
-        dataMaxima: isoDate(sql`max(${analiseGerencial.data})`),
-      })
-      .from(analiseGerencial),
-  ]);
-
-  return {
-    filiais: lista,
-    dataMinima: limites?.dataMinima ?? null,
-    dataMaxima: limites?.dataMaxima ?? null,
-  };
-}
 
 /**
  * Série diária de uma fonte (só os dias com carga). Cada fonte é consultada

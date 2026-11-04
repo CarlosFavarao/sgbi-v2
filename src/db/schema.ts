@@ -102,3 +102,25 @@ export const subgrupos = mysqlTable("view_11_subgrupos", {
   descricao: varchar("descricao", { length: 255 }).notNull(),
   grupo: int("grupo").notNull(),
 });
+
+/**
+ * Item a item do PDV (milhões de linhas; sempre filtrar por filial e data).
+ * Só as colunas usadas pelo v2. Um cupom = filial + dataVenda + numeroCaixa + numeroCupom.
+ */
+export const logpdv = mysqlTable(
+  "logpdv",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    filial: int("filial"),
+    dataVenda: date("dataVenda", { mode: "string" }),
+    codigo: int("codigo"),
+    departamento: int("departamento"),
+    grupo: int("grupo"),
+    subgrupo: int("subgrupo"),
+    numeroCaixa: int("numeroCaixa"),
+    numeroCupom: int("numeroCupom"),
+    valorTotal: double("valorTotal"),
+    quantidadeVendida: double("quantidadeVendida"),
+  },
+  (table) => [index("idx_logpdv_filial_data").on(table.filial, table.dataVenda)],
+);

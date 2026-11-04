@@ -1,7 +1,7 @@
 "use client";
 
 import { Area, AreaChart, Bar, BarChart, ResponsiveContainer, Tooltip } from "recharts";
-import { formatDiaMes } from "../format";
+import { formatDiaMes } from "@/lib/format";
 
 type Ponto = { data: string; valor: number | null };
 
