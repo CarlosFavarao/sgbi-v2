@@ -104,6 +104,8 @@ Origem: `tailwind.config.js` e `src/app/style.css` do projeto antigo. A base é 
 
 ## 6. Decisões (30/10/2026)
 
+> Lista consolidada de decisões e perguntas em aberto: [`decisoes-e-pendencias.md`](decisoes-e-pendencias.md).
+
 1. **Situação e Alertas**: ainda sem regra de negócio. Vão ficar em um arquivo de configuração, fácil de alterar. Valores provisórios:
    - Situação da compra sobre venda, pela variação em p.p. contra o período anterior: até 2 p.p. = Bom; acima de 2 até 6 p.p. = Atenção; acima de 6 p.p. = Crítico.
    - Alertas: departamento Crítico; margem bruta caindo 0,5 p.p. ou mais; despesas sobre a venda subindo 0,5 p.p. ou mais; cancelamentos subindo 10% ou mais; descontos subindo 5% ou mais.
