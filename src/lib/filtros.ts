@@ -30,7 +30,7 @@ export type Filial = { codigo: number; descricao: string };
 
 export type FiliaisResponse = {
   filiais: Filial[];
-  /** Primeiro e último dia com venda na analise gerencial. */
+  /** Primeiro dia carregado e último dia com venda na analise gerencial. */
   dataMinima: string | null;
   dataMaxima: string | null;
 };

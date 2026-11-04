@@ -1,6 +1,6 @@
 import "server-only";
 
-import { eq, sql, type SQL } from "drizzle-orm";
+import { eq, ne, sql, type SQL } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
 import { analiseGerencial, filiais } from "@/db/schema";
@@ -22,7 +22,7 @@ export async function getFiliais(): Promise<FiliaisResponse> {
     .from(analiseGerencial)
     .as("com_movimento");
 
-  const [lista, [limites]] = await Promise.all([
+  const [lista, [limites], [ultimaVenda]] = await Promise.all([
     db
       .select({
         codigo: comMovimento.filial,
@@ -37,11 +37,17 @@ export async function getFiliais(): Promise<FiliaisResponse> {
         dataMaxima: isoDate(sql`max(${analiseGerencial.data})`),
       })
       .from(analiseGerencial),
+    // A carga do último dia pode vir parcial (ex.: só compras, venda zerada):
+    // o "dados até" das telas é o último dia com venda.
+    db
+      .select({ data: isoDate(sql`max(${analiseGerencial.data})`) })
+      .from(analiseGerencial)
+      .where(ne(analiseGerencial.totalVenda, 0)),
   ]);
 
   return {
     filiais: lista,
     dataMinima: limites?.dataMinima ?? null,
-    dataMaxima: limites?.dataMaxima ?? null,
+    dataMaxima: ultimaVenda?.data ?? limites?.dataMaxima ?? null,
   };
 }

@@ -4,7 +4,7 @@
 
 Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind CSS v4, ESLint), `src/` dir e alias `@/*`.
 
-> Reescrita do SGBI antigo (`/home/carlosf/repositories/sgbi`). Telas: **Painel Executivo** (`/`, análise em `docs/painel-executivo-poc.md`) e **Vendas** (`/vendas`, em `docs/vendas.md`). Decisões e perguntas em aberto: `docs/decisoes-e-pendencias.md` (atualize ao decidir algo).
+> Reescrita do SGBI antigo (`/home/carlosf/repositories/sgbi`). Telas: **Painel Executivo** (`/`, análise em `docs/painel-executivo-poc.md`), **Metas** (`/metas`, em `docs/metas.md`) e **Vendas** (`/vendas`, em `docs/vendas.md`). Decisões e perguntas em aberto: `docs/decisoes-e-pendencias.md` (atualize ao decidir algo).
 > O banco tem dados **até ontem**; dados do dia atual, finalizadoras, login e usuários vêm da API do VX (`API_VIEW`): ver `docs/api-externa-mapeamento.md`.
 
 ## Stack obrigatória
@@ -22,9 +22,10 @@ Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind
   - `src/components/`: `filtros/` (`FiltrosBar`, `FiliaisSelect`), `kpi/` (`KpiCard`, `Delta`, `Sparkline`), `charts/evolucao-chart.tsx`, `avisos.tsx`, `app-shell.tsx` (menu: adicione a tela em `NAV`).
   - `src/server/`: `params.ts` (validação e `handle()`) e `filiais.ts` (rota compartilhada `/api/filiais`).
 - Route Handlers em `src/app/api/<tela>/**/route.ts` validam parâmetros e chamam `server/`. Use o `handle()` de `src/server/params.ts`, que já repassa os erros internos do Next (`unstable_rethrow`).
+- O "dados até" (`dataMaxima` de `/api/filiais`) é o último dia **com venda**: a carga do último dia pode vir parcial.
 - `logpdv` (milhões de linhas) sempre filtrado por filial e data; agrupe por cupom antes de contar (bem mais rápido que `count(distinct)`) e deixe essas consultas em rotas separadas, para não atrasar o resto da tela.
 - Nenhuma rota pode consultar o banco no `next build` (o build Docker não tem banco): rotas sem parâmetros chamam `await connection()`.
-- Componentes base em `src/components/ui/`: Card, Field, Segmented, `Select` (Radix), `Popover` (Radix), `Checkbox` (Radix), `DateRangePicker`, `Dialog` (Radix), `Spinner`, `LoadingOverlay`, `ResizableRow` (aceita `abaixo` para deixar uma linha visível embaixo e `alturaMinima`). **Nunca use controles nativos do navegador** (`<select>`, `<input type="date">`, checkbox nativo) nos filtros: use esses componentes; intervalos de datas usam `DateRangePicker` (`react-day-picker`, atalhos que só preenchem o calendário, botão Aplicar e faixa de referência opcional).
+- Componentes base em `src/components/ui/`: Card, Field, Segmented, `Select` (Radix), `Popover` (Radix), `Checkbox` (Radix), `DateRangePicker`, `Dialog` (Radix), `Spinner`, `LoadingOverlay`, `ResizableRow` (aceita `abaixo` para deixar uma linha visível embaixo, `alturaMinima` e painel único sem `direita`). **Nunca use controles nativos do navegador** (`<select>`, `<input type="date">`, checkbox nativo) nos filtros: use esses componentes; intervalos de datas usam `DateRangePicker` (`react-day-picker`, atalhos que só preenchem o calendário, botão Aplicar e faixa de referência opcional).
 - Carregamento: cada card mostra o próprio `LoadingOverlay` (escurece e esconde os dados, com spinner) enquanto as suas consultas estão pendentes ou em `isPlaceholderData`. Não escureça a página inteira; quebre os dados em consultas por fonte para os cards carregarem independentes.
 
 ## Visual e tema

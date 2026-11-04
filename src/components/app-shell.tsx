@@ -1,7 +1,7 @@
 "use client";
 
 import Icon from "@mdi/react";
-import { mdiCartOutline, mdiClose, mdiMenu, mdiMenuOpen, mdiViewDashboardOutline } from "@mdi/js";
+import { mdiBullseyeArrow, mdiCartOutline, mdiClose, mdiMenu, mdiMenuOpen, mdiViewDashboardOutline } from "@mdi/js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -10,6 +10,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 const NAV = [
   { href: "/", label: "Painel Executivo", icon: mdiViewDashboardOutline },
+  { href: "/metas", label: "Metas", icon: mdiBullseyeArrow },
   { href: "/vendas", label: "Vendas", icon: mdiCartOutline },
 ];
 

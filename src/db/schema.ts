@@ -83,6 +83,37 @@ export const previsaoDia = mysqlTable("previsao_dia", {
   diasUteis: int("dias_uteis"),
 });
 
+/** Metas mensais por nível (sem meta diária: a distribuição nos dias usa a curva da `previsao_dia`). */
+export const previsaoDepartamento = mysqlTable("previsao_departamento", {
+  id: int("id").primaryKey().autoincrement(),
+  codigoFilial: int("codigo_filial"),
+  ano: int("ano"),
+  mes: int("mes"),
+  codigo: int("codigo_departamento"),
+  previsaoVenda: double("previsao_venda"),
+  previsaoLucro: double("previsao_lucro"),
+});
+
+export const previsaoGrupo = mysqlTable("previsao_grupo", {
+  id: int("id").primaryKey().autoincrement(),
+  codigoFilial: int("codigo_filial"),
+  ano: int("ano"),
+  mes: int("mes"),
+  codigo: int("codigo_grupo"),
+  previsaoVenda: double("previsao_venda"),
+  previsaoLucro: double("previsao_lucro"),
+});
+
+export const previsaoSubgrupo = mysqlTable("previsao_subgrupo", {
+  id: int("id").primaryKey().autoincrement(),
+  codigoFilial: int("codigo_filial"),
+  ano: int("ano"),
+  mes: int("mes"),
+  codigo: int("codigo_subgrupo"),
+  previsaoVenda: double("previsao_venda"),
+  previsaoLucro: double("previsao_lucro"),
+});
+
 export const departamentos = mysqlTable("view_11_departamentos", {
   id: int("id").primaryKey().autoincrement(),
   codigo: int("codigo").notNull(),

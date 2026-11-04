@@ -2,7 +2,7 @@
 
 Registro das decisões já tomadas no SGBI v2 e das perguntas que ainda precisam de resposta. Quando uma pergunta for respondida, preencha a **Resposta** e a data, aplique a mudança e mova o item para a lista de decisões.
 
-Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.md`](painel-executivo-poc.md), [`vendas.md`](vendas.md) e [`api-externa-mapeamento.md`](api-externa-mapeamento.md).
+Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.md`](painel-executivo-poc.md), [`vendas.md`](vendas.md), [`metas.md`](metas.md) e [`api-externa-mapeamento.md`](api-externa-mapeamento.md).
 
 ---
 
@@ -23,6 +23,11 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D19 | **Vendas: Curva ABC** calculada no servidor, por faturamento (venda) e por rentabilidade (lucro bruto), com faixas provisórias A = 70% e B = 20% em `src/features/vendas/config.ts` (ver P24). Produtos com valor zero ou negativo ficam na C | 04/11/2026 |
 | D20 | **Vendas: listas de produtos** usam a classe ABC por faturamento: queda e crescimento só da classe A (e só produtos com venda no período de comparação); maior e menor margem das classes A e B. O card mostra os primeiros e "Ver todos" abre os 50 primeiros, com exportação CSV (ver P26) | 04/11/2026 |
 | D21 | **Vendas: cupons por departamento** = cupons com ao menos um item do departamento. A soma das linhas passa do total (um cupom conta em cada departamento); o total da tabela usa os cupons distintos do período (ver P27) | 04/11/2026 |
+| D26 | **Metas: data de referência ("hoje")** = último dia com venda dentro do mês escolhido. O "dados até" de todas as telas passou a ser o último dia **com venda**: em homologação, 15/09/2026 tem só 145 linhas com venda zerada (carga parcial) e distorcia o "dia" e o atalho "Mês da última carga" | 04/11/2026 |
+| D27 | **Metas: cálculos** — a meta é sempre do período inteiro; Atingimento = realizado ÷ meta do período; Diferença = realizado − meta (negativa = quanto falta); Situação pelo **ritmo** (realizado ÷ meta esperada até a referência, limites em `src/features/metas/config.ts`, ver P32); Projeção mantém o ritmo sobre a curva da meta (P35) | 04/11/2026 |
+| D28 | **Metas por departamento, grupo e subgrupo** só existem por mês (`previsao_departamento/grupo/subgrupo`); para Dia, Semana e Quinzena a meta mensal é distribuída pela curva da meta diária da loja (`previsao_dia`). O filtro Departamento usa a meta do departamento distribuída da mesma forma (ver P33) | 04/11/2026 |
+| D29 | **Meta de margem** = `previsao_lucro` ÷ `previsao_venda` do nível (ver P38) | 04/11/2026 |
+| D30 | Metas com código que não existe no cadastro aparecem como "Código N (sem cadastro)", em vez de sumirem (ver P36) | 04/11/2026 |
 
 ### Interface
 
@@ -38,6 +43,7 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D22 | **Tela de Vendas**: mesmos filtros e barra lateral do Painel Executivo (o menu superior do print não foi adotado, ver D9). A linha da tabela ocupa o resto da tela sem esconder as listas de produtos; em telas baixas (< 900px) as listas mostram 4 produtos, e as colunas Código e Departamento só aparecem quando o card é largo (o nome completo fica no texto ao passar o mouse). Cabe sem rolar em 1536 × 864 e 1920 × 1080; em 1366 × 768 a página rola um pouco | 04/11/2026 |
 | D23 | **Vendas: cupons carregam depois**: a consulta no `logpdv` leva de 13 a 17 s por período (ver P23), então é separada da venda. Os cards de cupons e as colunas de cupons da tabela mostram o próprio carregamento; o resto da tela não espera | 04/11/2026 |
 | D24 | **Exportar** gera CSV no formato do Excel em português (";", vírgula decimal), com as linhas expandidas da tabela (ver P31) | 04/11/2026 |
+| D31 | **Tela de Metas**: mesmas convenções das outras telas. Filtros: Mês de referência (meses com venda e meses com meta; os sem meta aparecem como "sem meta"), Filial, Departamento e Origem. Abas Dia, Semana, 1ª e 2ª Quinzena, Mês e Ano, relativas à referência; gráficos, tabela e cards seguem a aba escolhida. Cabe sem rolar em 1536 × 864 (tabela com altura mínima, ver P40) e 1920 × 1080 | 04/11/2026 |
 
 ### Projeto
 
@@ -132,6 +138,7 @@ O login do VX informa o nome de cada nível no cliente (`departamentalizacao`). 
 **P12. Lista de filiais** — Negócio / VX
 Hoje a lista vem das filiais com movimento na analise gerencial (a filial 3, que só existe no `parfil`, não aparece).
 - Mostrar todas as cadastradas, só as com movimento ou só as permitidas ao usuário (`filiaisComPermissao`)?
+- A filial 3 também tem meta em homologação: sem ela na lista, a meta da loja na tela de Metas fica menor que a soma das filiais (P36).
 
 > Resposta: _em aberto_
 
@@ -191,6 +198,72 @@ Mostra os 7 maiores departamentos e junta o resto em "Outros", com seletor Venda
 **P31. Formato da exportação** — Negócio
 Hoje exporta CSV (abre no Excel). O BI antigo tem exportação em PDF em alguns relatórios.
 - CSV basta ou precisa de XLSX/PDF com cabeçalho e filtros aplicados?
+
+> Resposta: _em aberto_
+
+### Tela de Metas
+
+**P32. Limites da situação (ritmo e margem)** — Negócio
+Provisório (`src/features/metas/config.ts`): realizado ÷ meta esperada até a referência ≥ 100% = Acima; ≥ 95% = No ritmo; abaixo disso = Abaixo. Margem: até 0,5 p.p. abaixo da meta = Ok; até 2 p.p. = Atenção; mais que isso = Crítico. Os valores do print não seguem uma regra única (ex.: margem 21,8% contra meta 22,0% = Ok, mas 23,5% contra 24,0% = Atenção).
+- Quais limites usar? Os mesmos para todos os departamentos?
+
+> Resposta: _em aberto_
+
+**P33. Meta diária por departamento, grupo e subgrupo** — Negócio / VX
+O VX só grava meta mensal por nível; a meta diária existe só para a loja. Hoje a meta mensal do nível é distribuída nos dias pela curva da meta diária da loja (dias de maior venda pesam mais); sem meta diária da loja, por dias corridos.
+- Essa distribuição é aceitável? Ou o VX deveria gerar meta diária por nível?
+
+> Resposta: _em aberto_
+
+**P34. Comparação dos cards ("vs")** — Negócio
+O print mostra "vs R$ 30.000 (seg)" sem explicar a base. Hoje: Dia e Semana comparam com a semana anterior (mesmo dia da semana), Quinzenas e Mês com o mês anterior, Ano com o ano anterior; o realizado é comparado até o mesmo ponto do período.
+- É essa a comparação esperada? Usar o filtro "Comparar com" das outras telas?
+
+> Resposta: _em aberto_
+
+**P35. Cálculo da projeção** — Negócio
+Hoje: realizado ÷ meta esperada até a referência × meta do período (mantém o ritmo sobre a curva da meta). Sem meta: média diária do realizado × dias do período.
+- Confirmar a fórmula. Considerar dias da semana ou feriados?
+
+> Resposta: _em aberto_
+
+**P36. Metas de homologação inconsistentes** — Qualidade / VX
+- Só existem metas de abril e maio/2025, e a venda começa em 26/08/2025: nenhum mês tem meta e venda ao mesmo tempo.
+- Os códigos de departamento das metas (1 a 24, 99, 999) não existem no cadastro (70 a 86); nenhum dos 101 grupos com meta existe na `view_11_grupos`; só 449 de 989 subgrupos casam.
+- `previsao_lucro` é maior que `previsao_venda` em algumas filiais (ex.: filial 3) e é 8% em outras; `dias_uteis` varia entre filiais no mesmo mês.
+- A filial 3 tem meta, mas não tem venda na analise gerencial, então fica fora da lista de filiais (ver P12).
+- Pedido: popular metas de 2026 com os códigos do cadastro atual, para validar a tela.
+
+> Resposta: _em aberto_
+
+**P37. Departamentos em risco e com melhor desempenho** — Negócio
+Hoje: em risco = situação Abaixo, do pior ritmo para o melhor; melhor desempenho = Acima ou No ritmo, do melhor para o pior; o card mostra 3 e "Ver todos" mostra o resto.
+- O critério deve ser o ritmo, o atingimento do período ou a diferença em R$? Quantos mostrar?
+
+> Resposta: _em aberto_
+
+**P38. Significado de `previsao_lucro`** — VX
+Hoje a meta de margem é `previsao_lucro` ÷ `previsao_venda`, supondo que `previsao_lucro` seja o lucro bruto esperado em R$. Os dados de homologação dão margens entre 8% e mais de 100%.
+- `previsao_lucro` é lucro em R$, margem em % ou outra coisa?
+
+> Resposta: _em aberto_
+
+**P39. Data de referência e filtro de período** — Negócio
+O print tem um filtro "Período" (01/10 a 31/10, "Mês atual") e a aba Dia diz "Hoje". Como os dados são D-1, a tela usa um seletor de mês, e o "dia" é o último dia com venda do mês.
+- O usuário precisa escolher outro dia de referência (ex.: ver como estava a meta no dia 10)?
+- Quando houver dados do dia (API do VX, P9), a aba Dia deve mostrar hoje?
+
+> Resposta: _em aberto_
+
+**P40. Densidade em 1536 × 864** — Coordenação
+Para caber sem rolar, a tabela de acompanhamento abre com a altura mínima (uma ou duas linhas visíveis; o usuário pode aumentar, e o tamanho fica salvo). Em 1920 × 1080 aparecem cerca de 8 linhas.
+- Prioridade em telas menores: tabela maior (rolando a página) ou todos os blocos visíveis? Alguns cards de baixo poderiam virar abas?
+
+> Resposta: _em aberto_
+
+**P41. Seletores dos gráficos e botão "Filtros"** — Negócio
+No print, o gráfico de cumprimento tem um seletor "Mês" e o de departamentos um seletor "Dia"; hoje os dois seguem a aba de período escolhida. O botão "Filtros" do print também não está claro (ver P29).
+- O gráfico de cumprimento deve ter uma visão anual (mês a mês)? O de departamentos precisa de período próprio?
 
 > Resposta: _em aberto_
 

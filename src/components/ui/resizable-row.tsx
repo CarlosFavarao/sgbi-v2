@@ -52,7 +52,8 @@ export function ResizableRow({
 }: {
   storageKey: string;
   esquerda: ReactNode;
-  direita: ReactNode;
+  /** Sem painel da direita: um único painel, só com a alça de altura. */
+  direita?: ReactNode;
   /** % da largura para o painel da esquerda. */
   larguraInicial?: number;
   /** Elemento logo abaixo da linha, que também precisa caber na tela. */
@@ -92,6 +93,9 @@ export function ResizableRow({
       const altura = alturaPelaTela();
       setTamanho((t) => (t.alturaManual || t.altura === altura ? t : { ...t, altura }));
     };
+    // Mede de novo depois da montagem: o `ref` de `abaixo` (irmão seguinte) só
+    // existe depois do layout effect desta linha.
+    atualizar();
     const observer = new ResizeObserver(atualizar);
     observer.observe(document.body);
     window.addEventListener("resize", atualizar);
@@ -151,29 +155,39 @@ export function ResizableRow({
 
   return (
     <div>
-      <div
-        ref={ref}
-        className="flex flex-col gap-2.5 xl:grid xl:gap-0 xl:[grid-template-columns:var(--esquerda)_10px_1fr] xl:[height:var(--altura)]"
-        style={{ "--esquerda": `${tamanho.esquerda}%`, "--altura": `${tamanho.altura}px` } as React.CSSProperties}
-      >
-        <div className="h-[28rem] min-h-0 min-w-0 xl:h-auto">{esquerda}</div>
+      {direita == null ? (
         <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Ajustar largura dos painéis (duplo clique restaura)"
-          aria-valuenow={Math.round(tamanho.esquerda)}
-          aria-valuemin={MIN_ESQUERDA}
-          aria-valuemax={MAX_ESQUERDA}
-          tabIndex={0}
-          onPointerDown={arrastar("x")}
-          onKeyDown={teclado("x")}
-          onDoubleClick={restaurar}
-          className={`${alca} hidden cursor-col-resize xl:flex`}
+          ref={ref}
+          className="h-[28rem] min-h-0 min-w-0 xl:[height:var(--altura)]"
+          style={{ "--altura": `${tamanho.altura}px` } as React.CSSProperties}
         >
-          <span className={`${grip} h-10 w-1`} />
+          {esquerda}
         </div>
-        <div className="h-96 min-h-0 min-w-0 xl:h-auto">{direita}</div>
-      </div>
+      ) : (
+        <div
+          ref={ref}
+          className="flex flex-col gap-2.5 xl:grid xl:gap-0 xl:[grid-template-columns:var(--esquerda)_10px_1fr] xl:[height:var(--altura)]"
+          style={{ "--esquerda": `${tamanho.esquerda}%`, "--altura": `${tamanho.altura}px` } as React.CSSProperties}
+        >
+          <div className="h-[28rem] min-h-0 min-w-0 xl:h-auto">{esquerda}</div>
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Ajustar largura dos painéis (duplo clique restaura)"
+            aria-valuenow={Math.round(tamanho.esquerda)}
+            aria-valuemin={MIN_ESQUERDA}
+            aria-valuemax={MAX_ESQUERDA}
+            tabIndex={0}
+            onPointerDown={arrastar("x")}
+            onKeyDown={teclado("x")}
+            onDoubleClick={restaurar}
+            className={`${alca} hidden cursor-col-resize xl:flex`}
+          >
+            <span className={`${grip} h-10 w-1`} />
+          </div>
+          <div className="h-96 min-h-0 min-w-0 xl:h-auto">{direita}</div>
+        </div>
+      )}
       <div
         role="separator"
         aria-orientation="horizontal"
