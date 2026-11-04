@@ -5,12 +5,13 @@ const currency = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 2,
 });
 
-const currencyNoCents = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  maximumFractionDigits: 0,
+// Valores sempre com 2 casas decimais (arredondadas na 2ª casa).
+const decimal2 = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
+// Só para rótulos de eixo dos gráficos (escala, não valor).
 const decimal1 = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -18,15 +19,16 @@ const decimal1 = new Intl.NumberFormat("pt-BR", {
 
 const integer = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
 
-/** R$ 850.430 (sem centavos para valores grandes) ou R$ 92,40. */
+/** R$ 850.430,27 */
 export function formatMoeda(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return Math.abs(value) >= 1000 ? currencyNoCents.format(value) : currency.format(value);
+  return currency.format(value);
 }
 
-export function formatMoedaCentavos(value: number | null | undefined): string {
+/** 1.234,57 */
+export function formatDecimal(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return currency.format(value);
+  return decimal2.format(value);
 }
 
 /** Eixo dos gráficos: R$ 80 mil, R$ 1,2 mi. */
@@ -37,22 +39,22 @@ export function formatMoedaCompacta(value: number): string {
   return `R$ ${integer.format(value)}`;
 }
 
-/** 24,5% */
+/** 24,53% */
 export function formatPercentual(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return `${decimal1.format(value)}%`;
+  return `${decimal2.format(value)}%`;
 }
 
-/** +8,2% */
+/** +8,21% */
 export function formatVariacao(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return `${value > 0 ? "+" : ""}${decimal1.format(value)}%`;
+  return `${value > 0 ? "+" : ""}${decimal2.format(value)}%`;
 }
 
-/** -0,7 p.p. */
+/** -0,72 p.p. */
 export function formatPontos(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return `${value > 0 ? "+" : ""}${decimal1.format(value)} p.p.`;
+  return `${value > 0 ? "+" : ""}${decimal2.format(value)} p.p.`;
 }
 
 export function formatInteiro(value: number): string {

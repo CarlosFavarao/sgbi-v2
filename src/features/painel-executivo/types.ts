@@ -1,7 +1,18 @@
 /** "todos" = PDV + Faturamento. */
 export type Origem = "todos" | "pdv" | "faturamento";
 
-export type Comparacao = "periodo-anterior" | "ano-anterior";
+export type AtalhoComparacao =
+  | "periodo-anterior"
+  | "semana-anterior"
+  | "mes-anterior"
+  | "trimestre-anterior"
+  | "ano-anterior";
+
+/**
+ * Atalho (acompanha o Período quando ele muda) ou datas escolhidas no calendário.
+ * Resolvido em datas por `periodoComparacao` (date.ts).
+ */
+export type Comparacao = { tipo: AtalhoComparacao } | { tipo: "personalizado"; periodo: Periodo };
 
 export type Nivel = "departamento" | "grupo" | "subgrupo";
 

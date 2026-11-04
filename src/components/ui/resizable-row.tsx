@@ -9,7 +9,7 @@ type Tamanho = {
   alturaManual: boolean;
 };
 
-const MIN_ALTURA = 220;
+const MIN_ALTURA = 160;
 const MIN_ESQUERDA = 35;
 const MAX_ESQUERDA = 80;
 const PASSO_TECLADO = { altura: 24, esquerda: 2 };

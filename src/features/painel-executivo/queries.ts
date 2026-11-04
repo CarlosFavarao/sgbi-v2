@@ -1,4 +1,5 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
+import { periodoComparacao } from "./date";
 import type {
   DepartamentosResponse,
   FiliaisResponse,
@@ -20,10 +21,13 @@ async function get<T>(path: string, params?: Record<string, string>): Promise<T>
 }
 
 function toParams(filtros: Filtros) {
+  const comparacao = periodoComparacao(filtros.periodo, filtros.comparacao);
   return {
     inicio: filtros.periodo.inicio,
     fim: filtros.periodo.fim,
-    comparacao: filtros.comparacao,
+    // O servidor recebe a comparação já resolvida em datas.
+    comparacaoInicio: comparacao.inicio,
+    comparacaoFim: comparacao.fim,
     filiais: [...filtros.filiais].sort((a, b) => a - b).join(","),
     origem: filtros.origem,
   };

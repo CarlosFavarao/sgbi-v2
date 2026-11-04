@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_rethrow } from "next/navigation";
 import { daysBetween } from "../date";
-import type { Comparacao, Fonte, Nivel, Origem, Periodo } from "../types";
+import type { Fonte, Nivel, Origem, Periodo } from "../types";
 
 export class ParamError extends Error {}
 
@@ -14,14 +14,17 @@ function oneOf<T extends string>(value: string | null, allowed: readonly T[], na
   throw new ParamError(`Parâmetro "${name}" inválido. Use: ${allowed.join(", ")}.`);
 }
 
-export function parsePeriodo(params: URLSearchParams): Periodo {
-  const inicio = params.get("inicio") ?? "";
-  const fim = params.get("fim") ?? "";
+export function parsePeriodo(
+  params: URLSearchParams,
+  [chaveInicio, chaveFim]: [string, string] = ["inicio", "fim"],
+): Periodo {
+  const inicio = params.get(chaveInicio) ?? "";
+  const fim = params.get(chaveFim) ?? "";
   if (!ISO_DATE.test(inicio) || !ISO_DATE.test(fim)) {
-    throw new ParamError('Parâmetros "inicio" e "fim" são obrigatórios (YYYY-MM-DD).');
+    throw new ParamError(`Parâmetros "${chaveInicio}" e "${chaveFim}" são obrigatórios (YYYY-MM-DD).`);
   }
   const dias = daysBetween(inicio, fim);
-  if (Number.isNaN(dias) || dias < 0) throw new ParamError('"inicio" deve ser anterior a "fim".');
+  if (Number.isNaN(dias) || dias < 0) throw new ParamError(`"${chaveInicio}" deve ser anterior a "${chaveFim}".`);
   if (dias >= MAX_DIAS) throw new ParamError(`O período pode ter no máximo ${MAX_DIAS} dias.`);
   return { inicio, fim };
 }
@@ -42,12 +45,9 @@ export function parseOrigem(params: URLSearchParams): Origem {
   return oneOf(params.get("origem") ?? "todos", ["todos", "pdv", "faturamento"], "origem");
 }
 
-export function parseComparacao(params: URLSearchParams): Comparacao {
-  return oneOf(
-    params.get("comparacao") ?? "periodo-anterior",
-    ["periodo-anterior", "ano-anterior"],
-    "comparacao",
-  );
+/** Período de comparação, já resolvido em datas pelo cliente. */
+export function parsePeriodoComparacao(params: URLSearchParams): Periodo {
+  return parsePeriodo(params, ["comparacaoInicio", "comparacaoFim"]);
 }
 
 export function parseNivel(params: URLSearchParams): Nivel {

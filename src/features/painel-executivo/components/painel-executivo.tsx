@@ -1,9 +1,10 @@
 "use client";
 
 import Icon from "@mdi/react";
-import { mdiAlertCircleOutline, mdiAlertOutline, mdiDatabaseClockOutline } from "@mdi/js";
+import { mdiDatabaseClockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { useAvisos } from "@/components/avisos";
 import { ResizableRow } from "@/components/ui/resizable-row";
 import { Spinner } from "@/components/ui/spinner";
 import { alertas as gerarAlertas, calcularLinha, combinarSeries, indicadores, totais } from "../compute";
@@ -25,7 +26,7 @@ export function PainelExecutivo() {
   const filiaisQuery = useQuery(painelQueries.filiais());
   const [estado, setEstado] = useState<FiltrosEstado>({
     periodo: PERIODO_PADRAO,
-    comparacao: "periodo-anterior",
+    comparacao: { tipo: "periodo-anterior" },
     // null = todas as filiais com movimento (resolvido quando a lista chega).
     filiais: null,
     origem: "todos",
@@ -99,6 +100,31 @@ export function PainelExecutivo() {
     });
   }, [fontesCarregando.vendas, resumo]);
 
+  // Avisos vão para o botão de triângulo na barra lateral (popup), não para faixas no topo.
+  useAvisos("painel-executivo", [
+    ...(erro
+      ? [
+          {
+            id: "erro-carregamento",
+            nivel: "erro" as const,
+            titulo: "Não foi possível carregar parte dos dados",
+            detalhes: [erro.error?.message ?? "Erro desconhecido."],
+            acao: { label: "Tentar novamente", onClick: () => void erro.refetch() },
+          },
+        ]
+      : []),
+    ...(lacunas.length
+      ? [
+          {
+            id: "dados-incompletos",
+            nivel: "atencao" as const,
+            titulo: "Dados incompletos: as variações podem estar distorcidas",
+            detalhes: lacunas,
+          },
+        ]
+      : []),
+  ]);
+
   return (
     <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-2.5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -127,34 +153,6 @@ export function PainelExecutivo() {
           </div>
         )}
       </div>
-
-      {erro && (
-        <div className="flex items-center gap-3 rounded-xl border border-error/40 bg-negative-highlight px-3 py-2 text-sm">
-          <Icon path={mdiAlertCircleOutline} size={0.9} className="text-error" aria-hidden />
-          <span>{erro.error?.message}</span>
-          <button
-            type="button"
-            onClick={() => erro.refetch()}
-            className="ml-auto rounded-lg border bg-card px-3 py-1 font-medium hover:bg-secondary"
-          >
-            Tentar novamente
-          </button>
-        </div>
-      )}
-
-      {lacunas.length > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-summary-orange-bg px-3 py-2 text-xs">
-          <Icon path={mdiAlertOutline} size={0.9} className="mt-0.5 shrink-0 text-warning" aria-hidden />
-          <div>
-            <div className="font-semibold">Dados incompletos: as variações podem estar distorcidas.</div>
-            {lacunas.map((texto) => (
-              <div key={texto} className="text-muted-foreground">
-                {texto}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-col gap-2.5">
         <KpiGrid

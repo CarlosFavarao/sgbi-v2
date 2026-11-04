@@ -1,13 +1,12 @@
 import type { NextRequest } from "next/server";
-import { periodoComparacao } from "@/features/painel-executivo/date";
 import { getDepartamentos } from "@/features/painel-executivo/server/data";
 import {
   handle,
-  parseComparacao,
   parseFiliais,
   parseNivel,
   parseOrigem,
   parsePeriodo,
+  parsePeriodoComparacao,
 } from "@/features/painel-executivo/server/params";
 
 export async function GET(request: NextRequest) {
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest) {
     return getDepartamentos(
       parseNivel(params),
       periodo,
-      periodoComparacao(periodo, parseComparacao(params)),
+      parsePeriodoComparacao(params),
       parseFiliais(params),
       parseOrigem(params),
     );

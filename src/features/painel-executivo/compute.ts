@@ -1,5 +1,6 @@
 import { PAINEL_CONFIG } from "./config";
 import { eachDay, startOfWeek } from "./date";
+import { formatDecimal, formatMoeda } from "./format";
 import type { Dia, Granularidade, LinhaNivel, Periodo, PontoSerie, ResumoResponse, SerieResponse } from "./types";
 
 type Campo = Exclude<keyof Dia, "data">;
@@ -234,13 +235,6 @@ export type Alerta = {
   detalhe: string;
 };
 
-const fmt = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const moeda = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  maximumFractionDigits: 0,
-});
-
 export function alertas(
   atual: Indicadores,
   anterior: Indicadores,
@@ -255,8 +249,8 @@ export function alertas(
       lista.push({
         id: `departamento-${d.codigo}`,
         tipo: d.variacaoPp > 0 ? "compra-alta" : "compra-baixa",
-        titulo: `${d.descricao}: compra sobre venda ${d.variacaoPp > 0 ? "subiu" : "caiu"} ${fmt.format(Math.abs(d.variacaoPp))} p.p.`,
-        detalhe: `${fmt.format(d.compraSobreVenda ?? 0)}% vs ${fmt.format(d.compraSobreVendaAnterior ?? 0)}% no período anterior`,
+        titulo: `${d.descricao}: compra sobre venda ${d.variacaoPp > 0 ? "subiu" : "caiu"} ${formatDecimal(Math.abs(d.variacaoPp))} p.p.`,
+        detalhe: `${formatDecimal(d.compraSobreVenda ?? 0)}% vs ${formatDecimal(d.compraSobreVendaAnterior ?? 0)}% no período anterior`,
       });
     }
   }
@@ -266,8 +260,8 @@ export function alertas(
     lista.push({
       id: "margem",
       tipo: "margem",
-      titulo: `Margem bruta ${fmt.format(Math.abs(margemPp))} p.p. abaixo do período anterior`,
-      detalhe: `${fmt.format(atual.margem!)}% vs ${fmt.format(anterior.margem!)}%`,
+      titulo: `Margem bruta ${formatDecimal(Math.abs(margemPp))} p.p. abaixo do período anterior`,
+      detalhe: `${formatDecimal(atual.margem!)}% vs ${formatDecimal(anterior.margem!)}%`,
     });
   }
 
@@ -277,8 +271,8 @@ export function alertas(
       lista.push({
         id: "despesas",
         tipo: "despesa",
-        titulo: `Despesas operacionais ${fmt.format(despesaPp)} p.p. acima do período anterior`,
-        detalhe: `${fmt.format(atual.despesasSobreVenda!)}% da venda vs ${fmt.format(anterior.despesasSobreVenda!)}%`,
+        titulo: `Despesas operacionais ${formatDecimal(despesaPp)} p.p. acima do período anterior`,
+        detalhe: `${formatDecimal(atual.despesasSobreVenda!)}% da venda vs ${formatDecimal(anterior.despesasSobreVenda!)}%`,
       });
     }
   }
@@ -289,8 +283,8 @@ export function alertas(
       lista.push({
         id: "cancelamentos",
         tipo: "cancelamento",
-        titulo: `Cancelamentos aumentaram ${fmt.format(variacaoCancel)}%`,
-        detalhe: `${moeda.format(atual.cancelamentos)} vs ${moeda.format(anterior.cancelamentos)} no período anterior`,
+        titulo: `Cancelamentos aumentaram ${formatDecimal(variacaoCancel)}%`,
+        detalhe: `${formatMoeda(atual.cancelamentos)} vs ${formatMoeda(anterior.cancelamentos)} no período anterior`,
       });
     }
   }

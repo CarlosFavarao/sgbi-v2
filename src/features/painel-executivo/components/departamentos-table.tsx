@@ -29,7 +29,7 @@ function SituacaoBadge({ situacao }: { situacao: Situacao | null }) {
   if (!situacao) return <span className="text-muted-foreground">—</span>;
   const s = SITUACOES[situacao];
   return (
-    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${s.className}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 align-middle text-xs font-medium ${s.className}`}>
       <Icon path={s.icon} size={0.6} aria-hidden />
       {s.label}
     </span>
@@ -39,7 +39,7 @@ function SituacaoBadge({ situacao }: { situacao: Situacao | null }) {
 /** Variação em p.p. da compra sobre venda: subir é ruim. */
 function PontosCompra({ value }: { value: number | null }) {
   if (value == null) return <span className="text-muted-foreground">—</span>;
-  const cor = Math.abs(value) < 0.05 ? "text-muted-foreground" : value > 0 ? "text-error" : "text-success";
+  const cor = Math.abs(value) < 0.005 ? "text-muted-foreground" : value > 0 ? "text-error" : "text-success";
   return <span className={`tabular-nums ${cor}`}>{formatPontos(value).replace(" p.p.", "")}</span>;
 }
 
@@ -56,7 +56,7 @@ function totalizar(linhas: LinhaCalculada[]): LinhaCalculada {
   return calcularLinha({ codigo: 0, descricao: "Total", ...soma });
 }
 
-const th = "px-3 py-1.5 font-medium";
+const th = "px-2.5 py-1.5 font-medium";
 
 export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
   const [nivel, setNivel] = useState<Nivel>("departamento");
@@ -112,7 +112,8 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
           <div
             className="min-h-0 flex-1 overflow-auto rounded-xl border"
           >
-            <table className="w-full min-w-[56rem] border-collapse text-[13px]">
+            {/* Sem quebra de linha: a tabela cresce até o conteúdo e o container rola na horizontal. */}
+            <table className="w-full border-collapse whitespace-nowrap text-[13px]">
               <thead className="sticky top-0 z-10 bg-secondary text-xs text-muted-foreground">
                 <tr>
                   <th rowSpan={2} className={`${th} text-left`}>
@@ -135,20 +136,20 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
               <tbody>
                 {filtradas.map((l) => (
                   <tr key={l.codigo} className="border-t hover:bg-secondary/50">
-                    <td className="px-3 py-1 font-medium">{l.descricao}</td>
-                    <td className="px-3 py-1 text-right tabular-nums">{formatMoeda(l.compra)}</td>
-                    <td className="px-3 py-1 text-right">
+                    <td className="px-2.5 py-1 font-medium">{l.descricao}</td>
+                    <td className="px-2.5 py-1 text-right tabular-nums">{formatMoeda(l.compra)}</td>
+                    <td className="px-2.5 py-1 text-right">
                       <Delta value={l.variacaoCompra} unidade="%" maiorMelhor={false} />
                     </td>
-                    <td className="px-3 py-1 text-right tabular-nums">{formatMoeda(l.venda)}</td>
-                    <td className="px-3 py-1 text-right">
+                    <td className="px-2.5 py-1 text-right tabular-nums">{formatMoeda(l.venda)}</td>
+                    <td className="px-2.5 py-1 text-right">
                       <Delta value={l.variacaoVenda} unidade="%" maiorMelhor />
                     </td>
-                    <td className="px-3 py-1 text-right tabular-nums">{formatPercentual(l.compraSobreVenda)}</td>
-                    <td className="px-3 py-1 text-right">
+                    <td className="px-2.5 py-1 text-right tabular-nums">{formatPercentual(l.compraSobreVenda)}</td>
+                    <td className="px-2.5 py-1 text-right">
                       <PontosCompra value={l.variacaoPp} />
                     </td>
-                    <td className="px-3 py-1 text-center">
+                    <td className="px-2.5 py-1 text-center">
                       <SituacaoBadge situacao={l.situacao} />
                     </td>
                   </tr>
@@ -163,20 +164,20 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
               </tbody>
               <tfoot className="sticky bottom-0 bg-card font-semibold">
                 <tr className="border-t-2">
-                  <td className="px-3 py-1.5">Total</td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{formatMoeda(total.compra)}</td>
-                  <td className="px-3 py-1.5 text-right">
+                  <td className="px-2.5 py-1.5">Total</td>
+                  <td className="px-2.5 py-1.5 text-right tabular-nums">{formatMoeda(total.compra)}</td>
+                  <td className="px-2.5 py-1.5 text-right">
                     <Delta value={total.variacaoCompra} unidade="%" maiorMelhor={false} />
                   </td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{formatMoeda(total.venda)}</td>
-                  <td className="px-3 py-1.5 text-right">
+                  <td className="px-2.5 py-1.5 text-right tabular-nums">{formatMoeda(total.venda)}</td>
+                  <td className="px-2.5 py-1.5 text-right">
                     <Delta value={total.variacaoVenda} unidade="%" maiorMelhor />
                   </td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{formatPercentual(total.compraSobreVenda)}</td>
-                  <td className="px-3 py-1.5 text-right">
+                  <td className="px-2.5 py-1.5 text-right tabular-nums">{formatPercentual(total.compraSobreVenda)}</td>
+                  <td className="px-2.5 py-1.5 text-right">
                     <PontosCompra value={total.variacaoPp} />
                   </td>
-                  <td className="px-3 py-1.5 text-center">
+                  <td className="px-2.5 py-1.5 text-center">
                     <SituacaoBadge situacao={total.situacao} />
                   </td>
                 </tr>

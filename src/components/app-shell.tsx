@@ -5,6 +5,7 @@ import { mdiClose, mdiMenu, mdiMenuOpen, mdiViewDashboardOutline } from "@mdi/js
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { AvisosBotao, AvisosProvider } from "./avisos";
 import { ThemeToggle } from "./theme-toggle";
 
 const NAV = [{ href: "/", label: "Painel Executivo", icon: mdiViewDashboardOutline }];
@@ -65,6 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [expanded, mobileOpen]);
 
   return (
+    <AvisosProvider>
     <div className="flex min-h-screen">
       {/* Reserva só a largura do trilho recolhido. */}
       <div aria-hidden className="hidden w-12 shrink-0 lg:block" />
@@ -103,6 +105,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav aria-label="Módulos" className="flex-1">
           <NavLinks expanded={expanded} onNavigate={() => setExpanded(false)} />
         </nav>
+        <div className="mb-1">
+          <AvisosBotao expandido={expanded} />
+        </div>
         <div className="[&_button]:size-9 [&_button]:text-header-foreground [&_button:hover]:bg-white/10">
           <ThemeToggle />
         </div>
@@ -121,7 +126,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Icon path={mdiMenu} size={1} />
           </button>
           <span className="text-lg font-semibold">SGBI</span>
-          <div className="ml-auto [&_button]:text-header-foreground [&_button:hover]:bg-white/10">
+          <div className="ml-auto">
+            <AvisosBotao lado="bottom" />
+          </div>
+          <div className="[&_button]:text-header-foreground [&_button:hover]:bg-white/10">
             <ThemeToggle />
           </div>
         </header>
@@ -155,5 +163,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </aside>
     </div>
+    </AvisosProvider>
   );
 }

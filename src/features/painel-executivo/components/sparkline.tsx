@@ -40,7 +40,7 @@ export function Sparkline({
   );
 
   return (
-    <div className="h-9 w-20 shrink-0" role="img" aria-label={`${label}: evolução diária`}>
+    <div className="h-9 w-12 shrink-0 @[14rem]:w-14 @[16rem]:w-20" role="img" aria-label={`${label}: evolução diária`}>
       <ResponsiveContainer width="100%" height="100%">
         {kind === "bar" ? (
           <BarChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }} barCategoryGap={1}>

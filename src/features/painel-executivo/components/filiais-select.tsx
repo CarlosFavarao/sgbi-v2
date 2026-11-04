@@ -30,7 +30,7 @@ export function FiliaisSelect({
 
   return (
     <Popover>
-      <PopoverTrigger className="group flex h-9 w-56 items-center gap-2 rounded-lg border bg-card px-3 text-sm shadow-xs outline-none transition-colors hover:border-primary/60 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/30 data-[state=open]:border-primary">
+      <PopoverTrigger className="group flex h-9 w-48 items-center gap-2 rounded-lg border bg-card px-3 text-sm shadow-xs outline-none transition-colors hover:border-primary/60 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/30 data-[state=open]:border-primary">
         <Icon path={mdiStorefrontOutline} size={0.75} className="shrink-0 text-muted-foreground" />
         <span className="truncate">{resumo}</span>
         <Icon

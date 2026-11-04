@@ -113,6 +113,7 @@ Origem: `tailwind.config.js` e `src/app/style.css` do projeto antigo. A base é 
 5. **Visual**: manter o estilo do BI antigo, com tema escuro novo no v2.
 6. **Descontos**: decisão adiada (como calcular sem a consulta de 34 s).
 7. **Densidade** (pedido do coordenador, 30/10/2026): os clientes preferem ver mais informação sem rolar a tela. Barra lateral no lugar da barra superior, cards e gráficos mais baixos, KPIs numa grade de 5 × 2. Os filtros mantêm o tamanho atual. A barra lateral tem 48px e expande por cima do conteúdo. A tabela por nível e os alertas ficam numa linha redimensionável (largura e altura) que, por padrão, ocupa o resto da tela; os alertas têm rolagem própria. A página não rola em 1536 × 864 nem em 1920 × 1080.
+8. **Comparar com** (30/10/2026): é um calendário próprio. Os dias do Período aparecem em laranja como referência. Atalhos que recuam a partir do Período: mesmo período anterior, semana, mês, trimestre e ano anterior. Um atalho fica relativo (acompanha o Período quando ele muda); datas escolhidas à mão ficam fixas. O servidor recebe a comparação já em datas (`comparacaoInicio`/`comparacaoFim`).
 
 O dicionário `message.json` é antigo e serve só como apoio; a fonte da verdade é o banco e o código.
 

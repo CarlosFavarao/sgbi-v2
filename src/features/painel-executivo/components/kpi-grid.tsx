@@ -13,7 +13,7 @@ import {
   mdiTagOutline,
 } from "@mdi/js";
 import { diferencaPp, indicadores, percentual, serieDiaria, variacao, type Indicadores } from "../compute";
-import { formatMoeda, formatMoedaCentavos, formatPercentual } from "../format";
+import { formatMoeda, formatPercentual } from "../format";
 import type { Fonte, MetaResponse, ResumoResponse } from "../types";
 import { corDoTom, Delta, KpiCard, SemDados } from "./kpi-card";
 import { Sparkline } from "./sparkline";
@@ -239,13 +239,13 @@ export function KpiGrid({
           tom="orange"
           badge="PDV"
           carregando={c.pdv}
-          valor={a.ticketMedio != null ? formatMoedaCentavos(a.ticketMedio) : <SemDados>Sem dados no período</SemDados>}
+          valor={a.ticketMedio != null ? formatMoeda(a.ticketMedio) : <SemDados>Sem dados no período</SemDados>}
           linhas={
             a.ticketMedio != null && (
               <>
                 <Comparativo temAnterior={temPdvAnterior}>
                 <Delta value={variacao(a.ticketMedio, b.ticketMedio)} unidade="%" maiorMelhor />
-                <Vs>{formatMoedaCentavos(b.ticketMedio)}</Vs>
+                <Vs>{formatMoeda(b.ticketMedio)}</Vs>
                 </Comparativo>
               </>
             )
@@ -255,7 +255,7 @@ export function KpiGrid({
               label="Ticket Médio"
               kind="area"
               color={corDoTom("orange")}
-              format={formatMoedaCentavos}
+              format={formatMoeda}
               data={serieDiaria(dias, (i) => i.ticketMedio, "tickets")}
             />
           }
