@@ -1,6 +1,7 @@
 "use client";
 
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { useState } from "react";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { formatMoeda, formatMoedaCompacta, formatPercentual } from "@/lib/format";
@@ -15,15 +16,38 @@ const CORES = [
   "var(--chart-3)",
   "var(--chart-8)",
   "var(--chart-6)",
+  "var(--chart-7)",
 ];
+const COR_OUTRAS = "var(--muted-foreground)";
 
-function Rosca({ titulo, fatias }: { titulo: string; fatias: Fatia[] }) {
-  const total = fatias.reduce((t, f) => t + f.valor, 0);
+/** Até 8 fatias com cores próprias; o resto vira "Outras" (sem cor repetida). */
+function agrupar(fatias: Fatia[]): (Fatia & { cor: string })[] {
   const visiveis = fatias.filter((f) => f.valor > 0);
+  const lista =
+    visiveis.length > CORES.length
+      ? [
+          ...visiveis.slice(0, CORES.length - 1),
+          { nome: "Outras", valor: visiveis.slice(CORES.length - 1).reduce((t, f) => t + f.valor, 0) },
+        ]
+      : visiveis;
+  return lista.map((f, i) => ({ ...f, cor: f.nome === "Outras" && i === CORES.length - 1 ? COR_OUTRAS : CORES[i] }));
+}
+
+/**
+ * Rosca com a legenda ao lado. Sem tooltip flutuante (ficava por cima do centro):
+ * ao passar o mouse numa fatia ou na legenda, o centro mostra o % e o valor dela.
+ */
+function Rosca({ titulo, fatias }: { titulo: string; fatias: Fatia[] }) {
+  const [ativa, setAtiva] = useState<number | null>(null);
+  const total = fatias.reduce((t, f) => t + f.valor, 0);
+  const lista = agrupar(fatias);
+  const destaque = ativa != null ? lista[ativa] : null;
+  const pct = (v: number) => formatPercentual(total ? (v / total) * 100 : null);
+
   return (
     <div className="flex min-w-0 flex-col">
       <div className="text-xs font-semibold">{titulo}</div>
-      {!visiveis.length ? (
+      {!lista.length ? (
         <p className="py-6 text-xs text-muted-foreground">Sem valores.</p>
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-[6.5rem_1fr] items-center gap-2">
@@ -31,47 +55,50 @@ function Rosca({ titulo, fatias }: { titulo: string; fatias: Fatia[] }) {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={visiveis}
+                  data={lista}
                   dataKey="valor"
                   nameKey="nome"
                   innerRadius="62%"
                   outerRadius="100%"
                   paddingAngle={1}
                   isAnimationActive={false}
+                  onMouseEnter={(_, i) => setAtiva(i)}
+                  onMouseLeave={() => setAtiva(null)}
                 >
-                  {visiveis.map((f, i) => (
-                    <Cell key={f.nome} fill={CORES[i % CORES.length]} stroke="var(--card)" />
+                  {lista.map((f, i) => (
+                    <Cell
+                      key={f.nome}
+                      fill={f.cor}
+                      stroke="var(--card)"
+                      fillOpacity={ativa == null || ativa === i ? 1 : 0.35}
+                    />
                   ))}
                 </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    const f = payload?.[0]?.payload as Fatia | undefined;
-                    if (!active || !f) return null;
-                    return (
-                      <div className="rounded-md border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md">
-                        {f.nome}: <span className="font-semibold tabular-nums">{formatMoeda(f.valor)}</span>
-                      </div>
-                    );
-                  }}
-                />
               </PieChart>
             </ResponsiveContainer>
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums">
-              {formatMoedaCompacta(total)}
+            <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center leading-tight tabular-nums">
+              {destaque ? (
+                <>
+                  <span className="text-[11px] font-bold">{pct(destaque.valor)}</span>
+                  <span className="text-[10px] text-muted-foreground">{formatMoedaCompacta(destaque.valor)}</span>
+                </>
+              ) : (
+                <span className="text-[11px] font-bold">{formatMoedaCompacta(total)}</span>
+              )}
             </span>
           </div>
           <ul className="flex min-w-0 flex-col gap-0.5 text-[11px]">
-            {visiveis.map((f, i) => (
+            {lista.map((f, i) => (
               <li
                 key={f.nome}
-                className="flex min-w-0 items-center gap-1.5"
-                title={`${f.nome}: ${formatMoeda(f.valor)}`}
+                className={`flex min-w-0 items-center gap-1.5 rounded px-1 ${ativa === i ? "bg-secondary font-semibold" : ""}`}
+                title={`${f.nome}: ${formatMoeda(f.valor)} (${pct(f.valor)})`}
+                onMouseEnter={() => setAtiva(i)}
+                onMouseLeave={() => setAtiva(null)}
               >
-                <span className="size-2 shrink-0 rounded-sm" style={{ background: CORES[i % CORES.length] }} />
+                <span className="size-2 shrink-0 rounded-sm" style={{ background: f.cor }} />
                 <span className="truncate">{f.nome}</span>
-                <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">
-                  {formatPercentual(total ? (f.valor / total) * 100 : null)}
-                </span>
+                <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">{pct(f.valor)}</span>
               </li>
             ))}
           </ul>

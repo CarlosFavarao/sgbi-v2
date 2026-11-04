@@ -32,7 +32,7 @@ function Tabela({ lista }: { lista: Movimentacao[] }) {
               {m.descricao}
             </td>
             <td className={`${td} text-right tabular-nums ${m.tipo === "saida" ? "text-error" : ""}`}>
-              {m.tipo === "saida" ? `(${formatMoeda(m.valor)})` : formatMoeda(m.valor)}
+              {formatMoeda(m.tipo === "saida" ? -m.valor : m.valor)}
             </td>
             <td className={td}>{m.tipo === "entrada" ? "Entrada" : "Saída"}</td>
             <td className={`${td} text-muted-foreground`}>

@@ -26,14 +26,14 @@ const COR_ATIVIDADE: Record<AtividadeDfc, string> = {
   financiamento: "bg-summary-purple-bg",
 };
 
-/** Saídas entre parênteses e em vermelho, como numa DFC. */
+/** Saídas e valores negativos com sinal de menos e em vermelho. */
 function Valor({ v, saida, forte }: { v: number | null; saida?: boolean; forte?: boolean }) {
   if (v == null) return <span className="text-muted-foreground">—</span>;
   const negativo = saida ? v !== 0 : v < 0;
   const texto = formatMoeda(Math.abs(v));
   return (
     <span className={`tabular-nums ${negativo ? "text-error" : ""} ${forte ? "font-semibold" : ""}`}>
-      {negativo ? `(${texto})` : texto}
+      {negativo ? `-${texto}` : texto}
     </span>
   );
 }
