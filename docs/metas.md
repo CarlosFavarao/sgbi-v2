@@ -18,7 +18,7 @@ O realizado vem da analise gerencial (venda e custo, conforme a Origem), como na
 
 - **Referência ("hoje")**: último dia com venda dentro do mês escolhido (D26).
 - **Abas**: Dia (a referência), Semana (segunda a domingo), 1ª Quinzena (1 a 15), 2ª Quinzena (16 ao fim), Mês e Ano. Uma aba que ainda não começou fica "Aguardando".
-- **Meta do período**: soma da meta diária no período inteiro. Para departamento, grupo e subgrupo, a meta mensal é distribuída nos dias pela curva da meta diária da loja (D28). Exemplo: em 30/04/2025 a soma das metas distribuídas dos departamentos é igual à meta diária da loja (R$ 157.528,21).
+- **Meta do período**: soma da meta diária no período inteiro. Para departamento, grupo e subgrupo (só há meta mensal), a meta mensal é dividida igualmente pelos dias do mês, como no BI antigo (D28, P33).
 - **Meta esperada (ritmo)**: soma da meta diária do início do período até a referência.
 - **Atingimento** = realizado ÷ meta do período. **Diferença** = realizado − meta. **Situação** pelo ritmo (realizado ÷ meta esperada): Acima, No ritmo ou Abaixo (limites em `config.ts`, P32).
 - **Projeção** = realizado ÷ meta esperada × meta do período; sem meta, média diária × dias do período (P35).
@@ -40,7 +40,7 @@ Estrutura em `src/features/metas/`:
 | Arquivo | Papel |
 |---|---|
 | `server/data.ts` | Queries Drizzle (server-only) com `'use cache'`, `cacheLife('hours')` e tag `metas` |
-| `metas.ts` | Soma da meta diária e distribuição da meta mensal de nível (funções puras, usadas no servidor) |
+| `metas.ts` | Soma da meta diária e divisão da meta mensal de nível pelos dias (funções puras, usadas no servidor) |
 | `periodos.ts` | Data de referência e as seis abas (período inteiro, parte decorrida e comparação) |
 | `compute.ts` | Resumo de meta (atingimento, diferença, situação, projeção, margem) e curva de cumprimento |
 | `config.ts` | Limites de ritmo e margem, linhas dos cards |

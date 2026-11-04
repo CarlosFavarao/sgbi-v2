@@ -4,7 +4,7 @@
 
 Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind CSS v4, ESLint), `src/` dir e alias `@/*`.
 
-> Reescrita do SGBI antigo (`/home/carlosf/repositories/sgbi`). Telas: **Painel Executivo** (`/`, análise em `docs/painel-executivo-poc.md`), **Metas** (`/metas`, em `docs/metas.md`), **Vendas** (`/vendas`, em `docs/vendas.md`) e **Financeiro** (abas Fluxo de Caixa em `/financeiro` e DFC em `/financeiro/dfc`; `docs/financeiro.md` e `docs/dfc.md`). Decisões e perguntas em aberto: `docs/decisoes-e-pendencias.md` (atualize ao decidir algo).
+> Reescrita do SGBI antigo (`/home/carlosf/repositories/sgbi`). Telas: **Painel Executivo** (`/`, análise em `docs/painel-executivo-poc.md`), **Metas** (`/metas`, em `docs/metas.md`), **Vendas** (`/vendas`, em `docs/vendas.md`) e **Financeiro** (abas Fluxo de Caixa em `/financeiro` e DFC em `/financeiro/dfc`, sem dados até existir fonte de caixa (P51); `docs/financeiro.md`). Decisões e perguntas em aberto: `docs/decisoes-e-pendencias.md` (atualize ao decidir algo).
 > O banco tem dados **até ontem**; dados do dia atual, finalizadoras, login e usuários vêm da API do VX (`API_VIEW`): ver `docs/api-externa-mapeamento.md`.
 
 ## Stack obrigatória
@@ -20,7 +20,7 @@ Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind
 - Código comum às telas:
   - `src/lib/`: `date.ts` (inclui `mesesDoPeriodo`), `format.ts`, `calc.ts` (percentual, variação, p.p.), `filtros.ts` (tipos Periodo, Filtros, Origem, Nivel…), `api.ts` (`getJson`, `filtrosParams`, `filiaisQuery`), `serie.ts` (`evolucaoComparativa`), `csv.ts` (`baixarCsv`), `config.ts` (`PERIODO_PADRAO`).
   - `src/components/`: `filtros/` (`FiltrosBar`, `FiliaisSelect`), `kpi/` (`KpiCard`, `Delta`, `Sparkline`), `charts/evolucao-chart.tsx`, `avisos.tsx`, `nao-integrado.tsx` (bloco do print sem fonte de dados), `abas-modulo.tsx` (abas entre telas de um módulo, ex.: `ABAS_FINANCEIRO`), `app-shell.tsx` (menu: adicione a tela em `NAV`; subtelas `/modulo/...` mantêm o item ativo).
-  - `src/server/`: `params.ts` (validação e `handle()`) e `filiais.ts` (rota compartilhada `/api/filiais`).
+  - `src/server/`: `params.ts` (validação e `handle()`), `filiais.ts` (rota compartilhada `/api/filiais`) e `cupons.ts` (venda, cupons e itens do PDV por dia no `logpdv`; não use o `parfil`).
 - Route Handlers em `src/app/api/<tela>/**/route.ts` validam parâmetros e chamam `server/`. Use o `handle()` de `src/server/params.ts`, que já repassa os erros internos do Next (`unstable_rethrow`).
 - O "dados até" (`dataMaxima` de `/api/filiais`) é o último dia **com venda**: a carga do último dia pode vir parcial.
 - Datas vazias do VX chegam como `0000-00-00` (trate como vazias). Tabelas `latin1` (ex.: `cartoes_empresas`) não aceitam literal acentuado no SQL junto com as colunas delas: monte esses textos no código.
@@ -28,6 +28,8 @@ Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind
 - Nenhuma rota pode consultar o banco no `next build` (o build Docker não tem banco): rotas sem parâmetros chamam `await connection()`.
 - Componentes base em `src/components/ui/`: Card, Field, Segmented, `Select` (Radix), `Popover` (Radix), `Checkbox` (Radix), `DateRangePicker`, `Dialog` (Radix), `Spinner`, `LoadingOverlay`, `ResizableRow` (aceita `abaixo` para deixar uma linha visível embaixo, `alturaMinima` e painel único sem `direita`). **Nunca use controles nativos do navegador** (`<select>`, `<input type="date">`, checkbox nativo) nos filtros: use esses componentes; intervalos de datas usam `DateRangePicker` (`react-day-picker`, atalhos que só preenchem o calendário, botão Aplicar e faixa de referência opcional).
 - Carregamento: cada card mostra o próprio `LoadingOverlay` (escurece e esconde os dados, com spinner) enquanto as suas consultas estão pendentes ou em `isPlaceholderData`. Não escureça a página inteira; quebre os dados em consultas por fonte para os cards carregarem independentes.
+
+- **Não invente dados**: bloco do print sem fonte confiável fica vazio ("não integrado" ou aviso de pendência) em vez de exibir uma aproximação que pareça o dado real (ex.: DFC estimada pela DRE, D41).
 
 ## Visual e tema
 

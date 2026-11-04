@@ -25,15 +25,15 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D21 | **Vendas: cupons por departamento** = cupons com ao menos um item do departamento. A soma das linhas passa do total (um cupom conta em cada departamento); o total da tabela usa os cupons distintos do período (ver P27) | 04/11/2026 |
 | D26 | **Metas: data de referência ("hoje")** = último dia com venda dentro do mês escolhido. O "dados até" de todas as telas passou a ser o último dia **com venda**: em homologação, 15/09/2026 tem só 145 linhas com venda zerada (carga parcial) e distorcia o "dia" e o atalho "Mês da última carga" | 04/11/2026 |
 | D27 | **Metas: cálculos** — a meta é sempre do período inteiro; Atingimento = realizado ÷ meta do período; Diferença = realizado − meta (negativa = quanto falta); Situação pelo **ritmo** (realizado ÷ meta esperada até a referência, limites em `src/features/metas/config.ts`, ver P32); Projeção mantém o ritmo sobre a curva da meta (P35) | 04/11/2026 |
-| D28 | **Metas por departamento, grupo e subgrupo** só existem por mês (`previsao_departamento/grupo/subgrupo`); para Dia, Semana e Quinzena a meta mensal é distribuída pela curva da meta diária da loja (`previsao_dia`). O filtro Departamento usa a meta do departamento distribuída da mesma forma (ver P33) | 04/11/2026 |
+| D28 | **Metas por departamento, grupo e subgrupo** só existem por mês (`previsao_departamento/grupo/subgrupo`). Para Dia, Semana e Quinzena, a meta mensal é **dividida igualmente pelos dias do mês** (meta ÷ dias do mês × dias do intervalo), como o BI antigo (`MetasRealizadoNeedleRepository`). O filtro Departamento usa a mesma divisão. Aprovado pelo usuário como solução provisória; continua pendente (P33) | 04/11/2026 |
 | D29 | **Meta de margem** = `previsao_lucro` ÷ `previsao_venda` do nível (ver P38) | 04/11/2026 |
 | D30 | Metas com código que não existe no cadastro aparecem como "Código N (sem cadastro)", em vez de sumirem (ver P36) | 04/11/2026 |
 | D32 | **Financeiro (Fluxo de Caixa): fontes** — entradas = vendas em cartão (`cartoes_vendas`, valor líquido na data de vencimento/liquidação) e contas a receber; saídas = contas a pagar. Referência ("hoje") igual à de Metas: último dia com venda do mês escolhido | 04/11/2026 |
 | D33 | **Situação dos movimentos**: realizado = recebido/pago até a referência (na data da baixa) ou cartão com vencimento até a referência; previsto = em aberto com vencimento depois; vencido = em aberto com vencimento até a referência. Título baixado depois da referência conta como em aberto nela. Datas `0000-00-00` contam como vazias | 04/11/2026 |
 | D34 | **Blocos sem fonte não são inventados**: saldo em caixa, dias de cobertura e saldo por conta aparecem como "não integrado", e um aviso fixo no popup explica as fontes que faltam. "Menor saldo projetado" é o menor fluxo previsto acumulado a partir de zero (sem o saldo de hoje, P42) | 04/11/2026 |
 | D35 | **Categorias**: entradas por empresa de cartão (Visa, Master, vouchers…) e "Clientes (contas a receber)"; saídas em "Despesas" (classificação `D`, como no relatório Análise de Contas do BI antigo) e "Fornecedores (mercadoria)" (P45) | 04/11/2026 |
-| D37 | **DFC estimada pela DRE gerencial** (`view_dre`, método direto, regime de competência): cada linha da DFC soma grupos/subgrupos da DRE (mapeamento em `src/features/dfc/config.ts`). Fornecedores pelo CMV; despesas financeiras e distribuição de lucros em financiamento; investimentos e ativo imobilizado em investimento; perdas de mercadoria ficam fora (sem saída de caixa) (ver P51 a P53) | 04/11/2026 |
-| D38 | **DFC: filtros e padrões** — mês (meses com DRE), comparação com o mês anterior ou o mesmo mês do ano anterior, modo acumulado no ano, filiais com DRE (1, 2, 3 e 11 em homologação, diferente da lista das outras telas, P57). Mês padrão = último mês com receita | 04/11/2026 |
+| D37 | ~~DFC estimada pela DRE gerencial~~ — **substituída pela D41**. A versão mapeava a `view_dre` (competência) nas atividades da DFC; o resultado era o lucro líquido do mês com outro nome | 04/11/2026 |
+| D38 | ~~DFC: filtros e padrões~~ — **substituída pela D41** (a tela não tem filtros enquanto não houver fonte de caixa) | 04/11/2026 |
 
 ### Interface
 
@@ -52,7 +52,8 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D31 | **Tela de Metas**: mesmas convenções das outras telas. Filtros: Mês de referência (meses com venda e meses com meta; os sem meta aparecem como "sem meta"), Filial, Departamento e Origem. Abas Dia, Semana, 1ª e 2ª Quinzena, Mês e Ano, relativas à referência; gráficos, tabela e cards seguem a aba escolhida. Cabe sem rolar em 1536 × 864 (tabela com altura mínima, ver P40) e 1920 × 1080 | 04/11/2026 |
 | D36 | **Tela Financeiro · Fluxo de Caixa**: mesmas convenções das outras telas (filtros Mês de referência e Filial). O gráfico do mês mostra entradas para cima, saídas para baixo e o resultado acumulado em eixo próprio à direita. Cabe sem rolar em 1536 × 864 e 1920 × 1080. As outras abas do módulo do print (Visão Financeira, DRE, DFC, Contas a Pagar e a Receber) não foram feitas (P49) | 04/11/2026 |
 | D39 | **Módulo Financeiro com abas** (Fluxo de Caixa em `/financeiro`, DFC em `/financeiro/dfc`) no cabeçalho, com o componente `AbasModulo`; o menu lateral mantém o item do módulo ativo nas subtelas. A barra lateral de filtros do print não foi adotada (filtros no cabeçalho, como nas outras telas) | 04/11/2026 |
-| D40 | **DFC: blocos sem fonte** — saldo inicial, saldo final e saldo por conta financeira aparecem como "não integrado" (P42); os filtros Conta Financeira e Forma de Pagamento do print não existem (sem fonte) e o filtro Categoria foi trocado pelo detalhamento das linhas (P54) | 04/11/2026 |
+| D41 | **DFC sem dados até existir fonte de caixa** (decisão do usuário, 04/11/2026): a tela `/financeiro/dfc` mostra só um aviso com as fontes que faltam. Motivo: a versão pela DRE dava "geração de caixa" de R$ 302.672 em jul/2026 contra lucro líquido de R$ 287.310 (a diferença era só a perda de mercadoria), ignorava o prazo de fornecedores e de cartões e classificava a taxa de cartões como financiamento. Melhor não exibir do que exibir um número que parece caixa e não é. A leitura da `view_dre` fica para uma futura tela de DRE (o código está no histórico do git, commits `ceb99aa` e `e0d7431`) | 04/11/2026 |
+| D40 | ~~DFC: blocos sem fonte~~ — **substituída pela D41** | 04/11/2026 |
 
 ### Projeto
 
@@ -62,6 +63,7 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D16 | Commits no **padrão do SGBI antigo**, com Ordem de Serviço (OS atual: 1649584) | 04/11/2026 |
 | D17 | Repositório provisório em conta pessoal; se o projeto for aprovado, vai para a organização da empresa (ver P22) | 04/11/2026 |
 | D25 | Código comum às telas fica fora das features: filtros, cards de KPI e gráfico de evolução em `src/components/`; datas, formatação, cálculos, tipos dos filtros e chamadas da API em `src/lib/`; validação de parâmetros e filiais em `src/server/` (rota `/api/filiais` compartilhada) | 04/11/2026 |
+| D42 | **Ticket Médio e base PDV do Painel Executivo vêm do `logpdv`** (como em Vendas), não mais do `parfil`, que soma cerca de metade da venda (P6). Cancelamentos ÷ venda PDV também muda de base | 04/11/2026 |
 
 ---
 
@@ -109,7 +111,7 @@ Cerca de 14% das despesas em homologação não têm tipo. Hoje entram no total.
 Em julho/2026, a filial 1 soma R$ 2,32 milhões na analise gerencial e R$ 1,10 milhão no `parfil`, com faturamento zerado. A filial 3 só existe no `parfil`; a filial 11 aparece na analise com venda zero.
 **Achado de 04/11/2026:** o `logpdv` bate exatamente com a analise gerencial (filial 1 em 02/07/2026: R$ 82.244,09 nos dois, 1.315 cupons), enquanto o `parfil` tem R$ 40.956,60 e 702 cupons. Por isso a tela de Vendas usa o `logpdv` (D18), e o **Ticket Médio difere entre as telas**: R$ 53,93 no Painel Executivo (`parfil`) e R$ 56,42 em Vendas (`logpdv`), em julho/2026.
 - Qual é a causa da diferença? Qual base é a correta para cada indicador?
-- O Painel Executivo deve passar a usar o `logpdv` também (exige resolver P23)?
+- **Atualização (04/11/2026, pedido do usuário):** o Painel Executivo passou a usar o `logpdv` para o Ticket Médio e para a base PDV dos cancelamentos, igual à tela de Vendas (consulta compartilhada em `src/server/cupons.ts`). Os dois indicadores ficam iguais entre as telas; a primeira consulta do Painel ficou mais lenta (P23). O `parfil` não é mais usado.
 
 > Resposta: _em aberto_
 
@@ -219,8 +221,8 @@ Provisório (`src/features/metas/config.ts`): realizado ÷ meta esperada até a 
 > Resposta: _em aberto_
 
 **P33. Meta diária por departamento, grupo e subgrupo** — Negócio / VX
-O VX só grava meta mensal por nível; a meta diária existe só para a loja. Hoje a meta mensal do nível é distribuída nos dias pela curva da meta diária da loja (dias de maior venda pesam mais); sem meta diária da loja, por dias corridos.
-- Essa distribuição é aceitável? Ou o VX deveria gerar meta diária por nível?
+O VX só grava meta **mensal** por nível; a meta diária existe só para a loja. Por enquanto (aprovado pelo usuário em 04/11/2026), a meta mensal do nível é dividida igualmente pelos dias do mês, como no BI antigo. Assim, a meta do Dia, da Semana e das Quinzenas por departamento é um **valor calculado**, não cadastrado: um sábado tem a mesma meta de uma terça.
+- O VX pode gerar meta diária por nível? Ou a divisão deve seguir a curva da meta diária da loja (dias fortes pesam mais)?
 
 > Resposta: _em aberto_
 
@@ -280,12 +282,14 @@ No print, o gráfico de cumprimento tem um seletor "Mês" e o de departamentos u
 
 **P42. Saldos bancários e contas** — VX / Coordenação
 O banco do SGBI não tem contas bancárias nem saldos. Sem isso ficam indisponíveis: saldo em caixa hoje, dias de cobertura, saldo por conta, saldo acumulado real (o gráfico e o fluxo previsto partem de zero) e caixa líquido.
+- **Mantido assim por decisão do usuário (04/11/2026), mas o nome engana:** no Fluxo de Caixa, "Menor Saldo Projetado", o "resultado acumulado" do gráfico e a coluna "Acumulado" do fluxo previsto não são saldos: são somas do fluxo partindo de zero. Quando houver saldo bancário, somar o saldo inicial; até lá, avaliar trocar o nome para "menor fluxo acumulado previsto".
 - O VX tem esses saldos (API ou tabela)? A carga do headquarter pode trazê-los?
 
 > Resposta: _em aberto_
 
 **P43. Data de entrada dos cartões** — Negócio / VX
 Hoje o valor líquido do cartão entra no vencimento (data de liquidação prevista), e até a referência conta como recebido. A `data_baixa` está vazia em cerca de 32 mil das 69 mil parcelas de homologação.
+- **Mantido assim por decisão do usuário (04/11/2026), mas é uma suposição:** "Entradas do Período", o gráfico do mês e as categorias contam o cartão como recebido pelo vencimento, não pelo crédito efetivo. Como o cartão é quase toda a entrada com volume, esses números são uma previsão de liquidação, não caixa recebido.
 - O recebimento deve usar a data de baixa (conciliação) quando existir? Como tratar cartão vencido e não baixado?
 
 > Resposta: _em aberto_
@@ -334,49 +338,43 @@ O print usa um período livre (01/10 a 31/10, "Mês atual") e "Hoje". A tela usa
 
 ### Tela DFC (Demonstração dos Fluxos de Caixa)
 
-**P51. DFC por competência ou por caixa** — Coordenação / Negócio
-A DFC usa a DRE gerencial do VX (competência): venda no mês da venda, despesa no mês do lançamento, fornecedores pelo CMV. Uma DFC de verdade usa recebimentos e pagamentos efetivos, mas `contas_pagar`/`contas_receber` de homologação são mínimos (P47) e o banco não tem vendas por finalizadora (P44) nem saldos (P42).
-- A DFC estimada pela DRE serve como POC? Qual fonte de caixa o VX pode entregar (movimento bancário, baixas de títulos)?
+**P51. Fonte de dados de caixa — BLOQUEIA A DFC** — Equipe que popula os dados (VX / headquarter) · **cobrar**
+A tela está sem dados (D41). Para uma DFC de verdade (método direto), a carga precisa trazer:
+- movimento bancário por conta e saldos diários das contas e caixas (P42);
+- baixas dos títulos a pagar e a receber, com data e valor efetivos (hoje `contas_pagar`/`contas_receber` têm 33 e 47 títulos, quase todos sem baixa, P47);
+- liquidação dos cartões (data e valor líquido creditado, com as taxas) (P43);
+- vendas por forma de pagamento (dinheiro, Pix, cartões, crediário) (P44);
+- plano de contas dos pagamentos (fornecedores, pessoal, impostos, investimentos, captação e amortização de empréstimos) (P45).
+- Quem é o responsável na equipe de dados e qual o prazo?
 
 > Resposta: _em aberto_
 
-**P52. Mapeamento DRE → DFC** — Negócio
-O mapeamento está em `src/features/dfc/config.ts` (códigos do plano de DRE do cliente de homologação). Pontos a validar:
-- "Despesas financeiras" (juros, tarifas) em financiamento: tarifas bancárias deveriam ser operacionais?
-- "Outros recebimentos" (juros recebidos, descontos obtidos) como operacionais.
-- "Outras despesas não operacionais" sem subgrupo próprio ficam em operacionais.
-- Perdas de mercadoria fora da DFC.
-- O plano de DRE (códigos `id_geral`) é igual em todos os clientes? Se não, o mapeamento precisa ser configurável por cliente.
+**P52. Futura tela de DRE (`view_dre`)** — Coordenação
+A `view_dre` tem 25 meses (set/2024 a set/2026), é hierárquica (grupo → subgrupo → item) e fecha com os totais; é a mesma fonte do relatório de DRE do BI antigo. Serve bem para uma tela de **DRE**, não de DFC.
+- Fazer a tela de DRE (aba do módulo Financeiro)? O plano de DRE (códigos `id_geral`) é igual em todos os clientes?
 
 > Resposta: _em aberto_
 
-**P53. Pagamentos a fornecedores** — Negócio / VX
-Hoje estimados pelo CMV da DRE. Alternativas: compras do mês (`view_analise_gerencial_produtos.totalCompra`) ou títulos de mercadoria pagos (`contas_pagar`), quando houver dados.
-- Qual base usar?
+**P53. Classificação de itens da DRE** — Negócio
+Ao analisar a DRE para a DFC: "Despesas financeiras" mistura taxa de cartões (R$ 44.673 em jul/2026, custo operacional), parcelas de financiamentos (R$ 60.496), juros e IOF. Para a DRE e uma futura DFC, separar esses itens.
+- Taxa de cartões deve ficar em despesas financeiras ou como dedução das vendas em cartão?
 
 > Resposta: _em aberto_
 
-**P54. Filtros do print (Conta Financeira, Forma de Pagamento, Categoria) e visão diária** — Negócio
-Conta financeira e forma de pagamento não existem no banco. A categoria virou o detalhamento das linhas da tabela. A DRE é mensal, então o gráfico de geração não tem a visão "Diário" do print.
-- Esses filtros são necessários? A visão diária depende da DFC por caixa (P51).
+**P54. Filtros do print da DFC (Conta Financeira, Forma de Pagamento, Categoria) e visão diária** — Negócio
+Dependem das fontes da P51.
 
 > Resposta: _em aberto_
 
 **P55. DRE de homologação** — Qualidade / VX
-- Ago/2026 está incompleta (receita 58% menor que julho) e tem um item "LIMPEZA E HIGIENE - LOJA" de R$ 1.578.703,14 na filial 1 (R$ 2.585,64 em julho), que deixa a geração do mês negativa em R$ 1,4 mi.
+- Ago/2026 está incompleta (receita 58% menor que julho) e tem um item "LIMPEZA E HIGIENE - LOJA" de R$ 1.578.703,14 na filial 1 (R$ 2.585,64 em julho).
 - Set/2026 não tem receita; a filial 11 aparece zerada em todos os meses.
-- Confirmar se o lançamento de agosto é erro de digitação e se a DRE é recalculada quando o mês fecha.
+- Confirmar se o lançamento de agosto é erro e se a DRE é recalculada quando o mês fecha.
 
 > Resposta: _em aberto_
 
-**P56. Movimentações relevantes** — Negócio
-Hoje: os 50 maiores movimentos do mês (cartões somados por dia e empresa, contas a receber e a pagar), sem conta financeira (P42).
-- Critério certo? Mostrar só realizados? Excluir os cartões (muitos lançamentos pequenos)?
-
-> Resposta: _em aberto_
-
-**P57. Lista de filiais por tela** — Coordenação
-A DFC lista as filiais com DRE (1, 2, 3 e 11), e as outras telas listam as filiais com venda na analise gerencial (sem a 3, com 7, 14, 15, 17 e 18). Ver P12.
+**P56. Lista de filiais por tela** — Coordenação
+A DRE tem as filiais 1, 2, 3 e 11; as outras telas listam as filiais com venda na analise gerencial (sem a 3, com 7, 14, 15, 17 e 18). Ver P12.
 - Unificar numa lista única (cadastro de filiais ou permissões do usuário)?
 
 > Resposta: _em aberto_

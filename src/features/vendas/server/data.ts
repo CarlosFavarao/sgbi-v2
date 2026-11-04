@@ -5,6 +5,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
 import { analiseGerencial, departamentos, grupos, logpdv, subgrupos } from "@/db/schema";
 import type { Origem } from "@/lib/filtros";
+import { getCuponsDiarios } from "@/server/cupons";
 import { montarProdutos } from "../abc";
 import type {
   CuponsNivelResponse,
@@ -71,23 +72,7 @@ export async function getSerie(
       .groupBy(analiseGerencial.data);
   }
 
-  // Agrupa primeiro por cupom e depois por dia: bem mais rápido que count(distinct ...).
-  const porCupom = db
-    .select({
-      data: logpdv.dataVenda,
-      valor: sql<number>`sum(${logpdv.valorTotal})`.as("valor"),
-      itens: sql<number>`sum(${logpdv.quantidadeVendida})`.as("itens"),
-    })
-    .from(logpdv)
-    .where(filtroLogpdv(periodo, lojas))
-    .groupBy(...chaveCupom)
-    .as("por_cupom");
-
-  const linhas = await db
-    .select({ data: porCupom.data, vendaPdv: sum(porCupom.valor), cupons: count(), itens: sum(porCupom.itens) })
-    .from(porCupom)
-    .groupBy(porCupom.data);
-  return linhas.map((l) => ({ ...l, data: l.data! }));
+  return getCuponsDiarios(periodo, lojas);
 }
 
 const niveis = {

@@ -13,7 +13,7 @@ import {
   previsaoSubgrupo,
   subgrupos,
 } from "@/db/schema";
-import { firstDayOfMonth, lastDayOfMonth, mesesDoPeriodo } from "@/lib/date";
+import { mesesDoPeriodo } from "@/lib/date";
 import type { Origem } from "@/lib/filtros";
 import { metaDiariaDoNivel, metaNivelNoPeriodo, type MetaMensal } from "../metas";
 import type {
@@ -119,7 +119,7 @@ export async function getOpcoes(lojas: number[]): Promise<OpcoesMetasResponse> {
 
 /**
  * Meta diária do período: da loja (`previsao_dia`) ou, com o filtro Departamento,
- * a meta mensal do departamento distribuída pela curva da loja.
+ * a meta mensal do departamento dividida igualmente pelos dias (P33).
  */
 export async function getMetasDiarias(
   periodo: Periodo,
@@ -130,12 +130,10 @@ export async function getMetasDiarias(
   cacheLife("hours");
   cacheTag(CACHE_TAG);
 
-  // Meses inteiros: a distribuição do departamento usa a curva do mês todo.
-  const meses = { inicio: firstDayOfMonth(periodo.inicio), fim: lastDayOfMonth(periodo.fim) };
-  const curva = await curvaDaLoja(meses, lojas);
-  if (departamento == null) return curva.filter((d) => d.data >= periodo.inicio && d.data <= periodo.fim);
+  if (departamento == null) return curvaDaLoja(periodo, lojas);
+  // Departamento: só há meta mensal, dividida igualmente pelos dias (P33).
   const mensais = (await metasMensais("departamento", periodo, lojas)).filter((m) => m.codigo === departamento);
-  return metaDiariaDoNivel(mensais, curva).filter((d) => d.data >= periodo.inicio && d.data <= periodo.fim);
+  return metaDiariaDoNivel(mensais).filter((d) => d.data >= periodo.inicio && d.data <= periodo.fim);
 }
 
 /** Venda e custo por dia (só os dias com carga). */
@@ -249,12 +247,10 @@ export async function getNiveisMetas(
   cacheLife("hours");
   cacheTag(CACHE_TAG);
 
-  const [atual, anterior, mensais, curva, itens] = await Promise.all([
+  const [atual, anterior, mensais, itens] = await Promise.all([
     realizadoPorNivel(nivel, decorrido, lojas, origem, departamento),
     realizadoPorNivel(nivel, comparacao, lojas, origem, departamento),
     metasMensais(nivel, periodo, lojas),
-    // Curva dos meses inteiros: a fração de cada mês é calculada sobre o mês todo.
-    curvaDaLoja({ inicio: firstDayOfMonth(periodo.inicio), fim: lastDayOfMonth(periodo.fim) }, lojas),
     hierarquia(nivel),
   ]);
 
@@ -267,8 +263,8 @@ export async function getNiveisMetas(
 
   const linhas: LinhaMetaNivel[] = [...codigos].map((codigo) => {
     const metasDoCodigo = mensaisPorCodigo.get(codigo) ?? [];
-    const total = metaNivelNoPeriodo(metasDoCodigo, periodo, curva);
-    const esperada = metaNivelNoPeriodo(metasDoCodigo, decorrido, curva);
+    const total = metaNivelNoPeriodo(metasDoCodigo, periodo);
+    const esperada = metaNivelNoPeriodo(metasDoCodigo, decorrido);
     const real = atualPorCodigo.get(codigo);
     return {
       codigo,
@@ -291,4 +287,3 @@ export async function getNiveisMetas(
       .sort((a, b) => (b.meta ?? 0) - (a.meta ?? 0) || b.venda - a.venda),
   };
 }
-

@@ -58,7 +58,7 @@ Coluna **Origem**: quais KPIs respeitam o filtro PDV / Faturamento (decisão 2).
 | **Despesas Operacionais** | `sum(despesa.valor)`, % da venda | — | ⚠️ só 13/08 a 03/09/2026 (qualidade vai popular) |
 | **Resultado Operacional** | lucro bruto - despesas (já existe em `ExpensesComparisonRepository`) | Filtro (lucro) | ⚠️ depende das despesas |
 | **Venda vs Meta** | realizado / `sum(previsao_dia.previsao_venda)` | Filtro (realizado) | ❌ metas só de 04–05/2025 (qualidade vai popular) |
-| **Ticket Médio** | `sum(parfil.totvrvenda) / sum(parfil.nclientes)` | Só PDV | ✅ até 12/08/2026 (base PDV) |
+| **Ticket Médio** | Venda PDV ÷ cupons do `logpdv` (até 04/11/2026 era o `parfil`, que soma cerca de metade da venda; D42) | Só PDV | ✅ até 12/08/2026 (base PDV) |
 | **Compra sobre Venda** | `sum(totalCompra) / sum(totalVenda)` | Filtro (venda) | ✅ |
 | **Cancelamentos** | `sum(cancelamentos.valor_total_cancelamento)`, % da venda | Só PDV | ✅ até 12/08/2026 |
 | **Descontos** | `sum(logpdv.valorDesconto)` sem cupom cancelado; "venda bruta" = venda + descontos | Só PDV | ⏸️ em aberto: consulta lenta (cerca de 34 s por mês) |

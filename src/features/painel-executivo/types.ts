@@ -18,7 +18,7 @@ export type Dia = {
   venda: number | null;
   custo: number | null;
   compra: number | null;
-  /** Base PDV (parfil). */
+  /** Base PDV (logpdv). */
   vendaPdv: number | null;
   tickets: number | null;
   cancelamentos: number | null;

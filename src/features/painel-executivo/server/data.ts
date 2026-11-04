@@ -9,11 +9,11 @@ import {
   departamentos,
   despesa,
   grupos,
-  parfil,
   previsaoDia,
   subgrupos,
 } from "@/db/schema";
 import { daysInMonth, firstDayOfMonth } from "@/lib/date";
+import { getCuponsDiarios } from "@/server/cupons";
 import type {
   DepartamentosResponse,
   Fonte,
@@ -73,15 +73,12 @@ export async function getSerie(
         .where(and(inArray(analiseGerencial.filial, lojas), between(analiseGerencial.data, inicio, fim)))
         .groupBy(analiseGerencial.data);
     case "pdv":
-      return db
-        .select({
-          data: parfil.dataVenda,
-          vendaPdv: sum(parfil.totvrvenda),
-          tickets: sum(parfil.nclientes),
-        })
-        .from(parfil)
-        .where(and(inArray(parfil.filial, lojas), between(parfil.dataVenda, inicio, fim)))
-        .groupBy(parfil.dataVenda);
+      // logpdv (bate com a venda PDV da analise); o parfil tem cerca de metade (P6).
+      return (await getCuponsDiarios(periodo, lojas)).map((d) => ({
+        data: d.data,
+        vendaPdv: d.vendaPdv,
+        tickets: d.cupons,
+      }));
     case "cancelamentos":
       return db
         .select({

@@ -27,16 +27,14 @@ export function somaMetaDiaria(metas: MetaDia[], p: Periodo | null): { meta: num
 }
 
 /**
- * Fração da meta mensal que cabe em `p` dentro do mês: pela curva da meta diária
- * da loja (dias de maior venda pesam mais) ou, sem meta diária, pelos dias corridos.
+ * Fração da meta mensal que cabe em `p` dentro do mês, pelos dias corridos:
+ * meta mensal ÷ dias do mês × dias do intervalo, como o BI antigo
+ * (`MetasRealizadoNeedleRepository`). Pendência P33.
  */
-function fracaoDoMes(mes: string, p: Periodo, curvaLoja: MetaDia[]): number {
+function fracaoDoMes(mes: string, p: Periodo): number {
   const mesInteiro = { inicio: `${mes}-01`, fim: lastDayOfMonth(`${mes}-01`) };
   const parte = intersecao(mesInteiro, p);
-  if (!parte) return 0;
-  const doMes = somaMetaDiaria(curvaLoja, mesInteiro);
-  if (doMes && doMes.meta > 0) return (somaMetaDiaria(curvaLoja, parte)?.meta ?? 0) / doMes.meta;
-  return dias(parte) / daysInMonth(mesInteiro.inicio);
+  return parte ? dias(parte) / daysInMonth(mesInteiro.inicio) : 0;
 }
 
 /**
@@ -46,7 +44,6 @@ function fracaoDoMes(mes: string, p: Periodo, curvaLoja: MetaDia[]): number {
 export function metaNivelNoPeriodo(
   mensais: MetaMensal[],
   p: Periodo | null,
-  curvaLoja: MetaDia[],
 ): { meta: number; metaLucro: number } | null {
   if (!p) return null;
   const meses = new Set(mesesDoPeriodo(p));
@@ -56,7 +53,7 @@ export function metaNivelNoPeriodo(
   for (const m of mensais) {
     if (!meses.has(m.mes)) continue;
     encontrou = true;
-    const fracao = fracaoDoMes(m.mes, p, curvaLoja);
+    const fracao = fracaoDoMes(m.mes, p);
     meta += m.meta * fracao;
     metaLucro += m.metaLucro * fracao;
   }
@@ -64,10 +61,10 @@ export function metaNivelNoPeriodo(
 }
 
 /**
- * Meta diária de um departamento: a meta mensal dele distribuída pela curva da
- * meta diária da loja (usada quando o filtro Departamento está ativo).
+ * Meta diária de um departamento (filtro Departamento): a meta mensal dele
+ * dividida igualmente pelos dias do mês (P33).
  */
-export function metaDiariaDoNivel(mensais: MetaMensal[], curvaLoja: MetaDia[]): MetaDia[] {
+export function metaDiariaDoNivel(mensais: MetaMensal[]): MetaDia[] {
   const porMes = new Map<string, { meta: number; metaLucro: number }>();
   for (const m of mensais) {
     const atual = porMes.get(m.mes) ?? { meta: 0, metaLucro: 0 };
@@ -75,14 +72,13 @@ export function metaDiariaDoNivel(mensais: MetaMensal[], curvaLoja: MetaDia[]): 
   }
   const resultado: MetaDia[] = [];
   for (const [mes, total] of porMes) {
-    const mesInteiro = { inicio: `${mes}-01`, fim: lastDayOfMonth(`${mes}-01`) };
-    const lojaMes = somaMetaDiaria(curvaLoja, mesInteiro)?.meta ?? 0;
-    const qtd = daysInMonth(mesInteiro.inicio);
+    const qtd = daysInMonth(`${mes}-01`);
     for (let d = 1; d <= qtd; d++) {
-      const data = `${mes}-${String(d).padStart(2, "0")}`;
-      const lojaDia = curvaLoja.find((c) => c.data === data)?.meta ?? 0;
-      const fracao = lojaMes > 0 ? lojaDia / lojaMes : 1 / qtd;
-      resultado.push({ data, meta: total.meta * fracao, metaLucro: total.metaLucro * fracao });
+      resultado.push({
+        data: `${mes}-${String(d).padStart(2, "0")}`,
+        meta: total.meta / qtd,
+        metaLucro: total.metaLucro / qtd,
+      });
     }
   }
   return resultado.sort((a, b) => a.data.localeCompare(b.data));

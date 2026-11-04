@@ -5,7 +5,7 @@ Reescrita do **SGBI** (Business Intelligence do VX) em Next.js 16. Telas prontas
 - **Painel Executivo** (`/`): indicadores de venda, margem, despesas, metas, compras e cancelamentos em uma única tela, sem rolagem.
 - **Metas** (`/metas`): cumprimento das metas de venda e de margem por dia, semana, quinzena, mês e ano, com projeção de fechamento e acompanhamento por departamento, grupo e subgrupo.
 - **Financeiro · Fluxo de Caixa** (`/financeiro`): entradas (cartões e contas a receber) e saídas (contas a pagar) realizadas e previstas, compromissos a vencer e prazos médios.
-- **Financeiro · DFC** (`/financeiro/dfc`): Demonstração dos Fluxos de Caixa por atividade, estimada pela DRE gerencial, com comparação, acumulado no ano e evolução de 12 meses.
+- **Financeiro · DFC** (`/financeiro/dfc`): sem dados, aguardando fonte de caixa (pendência P51).
 - **Vendas** (`/vendas`): desempenho comercial por departamento, grupo e subgrupo, cupons e ticket médio, Curva ABC e listas de produtos.
 
 > **Status:** POC em homologação. As decisões tomadas e as perguntas ainda em aberto estão em [`docs/decisoes-e-pendencias.md`](docs/decisoes-e-pendencias.md).
@@ -83,7 +83,6 @@ src/
 ├── db/                          # Cliente Drizzle (server-only) e schema
 ├── features/
 │   ├── painel-executivo/
-│   ├── dfc/
 │   ├── financeiro/
 │   ├── metas/
 │   └── vendas/
@@ -139,7 +138,6 @@ Tipos: `feat`, `fix`, `docs`, `chore`, `refactor`.
 |---|---|
 | [`docs/decisoes-e-pendencias.md`](docs/decisoes-e-pendencias.md) | Decisões tomadas e pontos de alinhamento em aberto |
 | [`docs/painel-executivo-poc.md`](docs/painel-executivo-poc.md) | Análise do BI antigo, tabelas, fonte de cada dado, riscos e implementação da POC |
-| [`docs/dfc.md`](docs/dfc.md) | DFC: fonte (DRE gerencial), mapeamento DRE → DFC, regras e implementação |
 | [`docs/financeiro.md`](docs/financeiro.md) | Fluxo de Caixa: fontes, blocos sem fonte, regras e implementação |
 | [`docs/metas.md`](docs/metas.md) | Tela de Metas: fonte das metas, regras de cálculo, dados de homologação e implementação |
 | [`docs/vendas.md`](docs/vendas.md) | Tela de Vendas: fonte de cada dado, desempenho das consultas e implementação |

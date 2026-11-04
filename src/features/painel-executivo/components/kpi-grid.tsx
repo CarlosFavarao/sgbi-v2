@@ -234,7 +234,7 @@ export function KpiGrid({
       <div className="contents">
         <KpiCard
           titulo="Ticket Médio"
-          ajuda="Venda do PDV dividida pela quantidade de cupons (tabela parfil). Não usa o filtro de Origem."
+          ajuda="Venda do PDV dividida pela quantidade de cupons (logpdv, mesma base da tela de Vendas). Não usa o filtro de Origem."
           icone={mdiCartOutline}
           tom="orange"
           badge="PDV"
