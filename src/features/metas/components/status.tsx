@@ -55,3 +55,13 @@ export function StatusMetaBadge({
 export function StatusMargemBadge({ status }: { status: StatusMargem }) {
   return <Selo s={MARGEM[status]} />;
 }
+
+/** Situações possíveis da margem, para a legenda de pontos no cabeçalho da tabela. */
+export const PONTOS_MARGEM = (["ok", "atencao", "critico"] as const).map((k) => ({
+  label: MARGEM[k].label,
+  classe: MARGEM[k].ponto,
+}));
+
+/** Posição de cada situação para ordenar as tabelas (da melhor para a pior). */
+export const ORDEM_STATUS = { acima: 0, "no-ritmo": 1, abaixo: 2, aguardando: 3, "sem-meta": 4 } as const satisfies Record<StatusMeta, number>;
+export const ORDEM_MARGEM = { ok: 0, atencao: 1, critico: 2, "sem-meta": 3 } as const satisfies Record<StatusMargem, number>;

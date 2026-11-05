@@ -1,10 +1,12 @@
 "use client";
 
+import { SituacaoPontos } from "@/components/situacao-pontos";
 import Icon from "@mdi/react";
 import { mdiAlertCircle, mdiCheckCircle, mdiCloseCircle, mdiCubeOutline, mdiMagnify } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { Segmented } from "@/components/ui/segmented";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { calcularLinha, type LinhaCalculada, type Situacao } from "../compute";
@@ -24,6 +26,11 @@ const SITUACOES: Record<Situacao, { label: string; icon: string; className: stri
   atencao: { label: "Atenção", icon: mdiAlertCircle, className: "bg-summary-orange-bg text-warning" },
   critico: { label: "Crítico", icon: mdiCloseCircle, className: "bg-negative-highlight text-error" },
 };
+
+const PONTOS_SITUACAO = (Object.keys(SITUACOES) as Situacao[]).map((k) => ({
+  label: SITUACOES[k].label,
+  classe: { bom: "bg-success", atencao: "bg-warning", critico: "bg-error" }[k],
+}));
 
 function SituacaoBadge({ situacao }: { situacao: Situacao | null }) {
   if (!situacao) return <span className="text-muted-foreground">—</span>;
@@ -56,7 +63,47 @@ function totalizar(linhas: LinhaCalculada[]): LinhaCalculada {
   return calcularLinha({ codigo: 0, descricao: "Total", ...soma });
 }
 
-const th = "px-2.5 py-1.5 font-medium";
+const ORDEM_SITUACAO = { bom: 0, atencao: 1, critico: 2 } as const;
+
+function colunasDepartamentos(rotuloNivel: string): Coluna<LinhaCalculada>[] {
+  return [
+    { id: "nome", titulo: rotuloNivel, subtitulo: "Nome", align: "left", className: "font-medium", cell: (l) => l.descricao, ordenar: (l) => l.descricao },
+    { id: "compra", titulo: "Compras", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.compra), ordenar: (l) => l.compra },
+    {
+      id: "var-compra",
+      titulo: "Compras",
+      subtitulo: "Var. %",
+      cell: (l) => <Delta value={l.variacaoCompra} unidade="%" maiorMelhor={false} />,
+      ordenar: (l) => l.variacaoCompra,
+    },
+    { id: "venda", titulo: "Venda", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.venda), ordenar: (l) => l.venda },
+    {
+      id: "var-venda",
+      titulo: "Venda",
+      subtitulo: "Var. %",
+      cell: (l) => <Delta value={l.variacaoVenda} unidade="%" maiorMelhor />,
+      ordenar: (l) => l.variacaoVenda,
+    },
+    { id: "csv", titulo: "Compra sobre Venda", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.compraSobreVenda), ordenar: (l) => l.compraSobreVenda },
+    {
+      id: "var-csv",
+      titulo: "Compra sobre Venda",
+      subtitulo: "Var. p.p.",
+      cell: (l) => <PontosCompra value={l.variacaoPp} />,
+      ordenar: (l) => l.variacaoPp,
+    },
+    {
+      id: "situacao",
+      titulo: "Situação",
+      subtitulo: <SituacaoPontos itens={PONTOS_SITUACAO} />,
+      rotulo: "Situação",
+      align: "center",
+      divisor: true,
+      cell: (l) => <SituacaoBadge situacao={l.situacao} />,
+      ordenar: (l) => (l.situacao ? ORDEM_SITUACAO[l.situacao] : null),
+    },
+  ];
+}
 
 export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
   const [nivel, setNivel] = useState<Nivel>("departamento");
@@ -112,77 +159,13 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
           <div
             className="min-h-0 flex-1 overflow-auto rounded-xl border"
           >
-            {/* Sem quebra de linha: a tabela cresce até o conteúdo e o container rola na horizontal. */}
-            <table className="w-full border-collapse whitespace-nowrap text-[13px]">
-              <thead className="sticky top-0 z-10 bg-secondary text-xs text-muted-foreground">
-                <tr>
-                  <th rowSpan={2} className={`${th} text-left`}>
-                    {rotuloNivel}
-                  </th>
-                  <th colSpan={2} className={`${th} border-l`}>Compras</th>
-                  <th colSpan={2} className={`${th} border-l`}>Venda</th>
-                  <th colSpan={2} className={`${th} border-l`}>Compra sobre Venda</th>
-                  <th rowSpan={2} className={`${th} border-l`}>Situação</th>
-                </tr>
-                <tr>
-                  <th className={`${th} border-l text-right`}>Valor</th>
-                  <th className={`${th} text-right`}>Var. %</th>
-                  <th className={`${th} border-l text-right`}>Valor</th>
-                  <th className={`${th} text-right`}>Var. %</th>
-                  <th className={`${th} border-l text-right`}>%</th>
-                  <th className={`${th} text-right`}>Var. p.p.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtradas.map((l) => (
-                  <tr key={l.codigo} className="border-t hover:bg-secondary/50">
-                    <td className="px-2.5 py-1 font-medium">{l.descricao}</td>
-                    <td className="px-2.5 py-1 text-right tabular-nums">{formatMoeda(l.compra)}</td>
-                    <td className="px-2.5 py-1 text-right">
-                      <Delta value={l.variacaoCompra} unidade="%" maiorMelhor={false} />
-                    </td>
-                    <td className="px-2.5 py-1 text-right tabular-nums">{formatMoeda(l.venda)}</td>
-                    <td className="px-2.5 py-1 text-right">
-                      <Delta value={l.variacaoVenda} unidade="%" maiorMelhor />
-                    </td>
-                    <td className="px-2.5 py-1 text-right tabular-nums">{formatPercentual(l.compraSobreVenda)}</td>
-                    <td className="px-2.5 py-1 text-right">
-                      <PontosCompra value={l.variacaoPp} />
-                    </td>
-                    <td className="px-2.5 py-1 text-center">
-                      <SituacaoBadge situacao={l.situacao} />
-                    </td>
-                  </tr>
-                ))}
-                {!filtradas.length && (
-                  <tr>
-                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
-                      Nenhum resultado.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-              <tfoot className="sticky bottom-0 bg-card font-semibold">
-                <tr className="border-t-2">
-                  <td className="px-2.5 py-1.5">Total</td>
-                  <td className="px-2.5 py-1.5 text-right tabular-nums">{formatMoeda(total.compra)}</td>
-                  <td className="px-2.5 py-1.5 text-right">
-                    <Delta value={total.variacaoCompra} unidade="%" maiorMelhor={false} />
-                  </td>
-                  <td className="px-2.5 py-1.5 text-right tabular-nums">{formatMoeda(total.venda)}</td>
-                  <td className="px-2.5 py-1.5 text-right">
-                    <Delta value={total.variacaoVenda} unidade="%" maiorMelhor />
-                  </td>
-                  <td className="px-2.5 py-1.5 text-right tabular-nums">{formatPercentual(total.compraSobreVenda)}</td>
-                  <td className="px-2.5 py-1.5 text-right">
-                    <PontosCompra value={total.variacaoPp} />
-                  </td>
-                  <td className="px-2.5 py-1.5 text-center">
-                    <SituacaoBadge situacao={total.situacao} />
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+            <DataTable
+              colunas={colunasDepartamentos(rotuloNivel)}
+              linhas={filtradas}
+              chave={(l) => String(l.codigo)}
+              total={total}
+              rotuloTotal="Total"
+            />
           </div>
         )}
         {/* z-20: acima do cabeçalho fixo (sticky) da tabela. */}

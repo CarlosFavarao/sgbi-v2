@@ -4,6 +4,7 @@ import Icon from "@mdi/react";
 import { mdiArrowRight } from "@mdi/js";
 import type { ReactNode } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { formatMoeda, formatPercentual, formatPontos } from "@/lib/format";
@@ -11,10 +12,7 @@ import type { ResumoMeta } from "../compute";
 import { METAS_CONFIG } from "../config";
 import type { AbaPeriodo, PeriodoMeta } from "../types";
 import type { LinhaAcompanhamento } from "./acompanhamento-table";
-import { StatusMetaBadge } from "./status";
-
-const th = "px-2 py-0.5 font-medium";
-const td = "px-2 py-0.5";
+import { ORDEM_STATUS, StatusMetaBadge } from "./status";
 
 function CardLista({
   titulo,
@@ -47,6 +45,52 @@ function Vazio({ children }: { children: ReactNode }) {
   return <p className="py-6 text-center text-xs text-muted-foreground">{children}</p>;
 }
 
+type LinhaPeriodo = { periodo: PeriodoMeta; resumo: ResumoMeta };
+
+function colunasPeriodos(onSelecionar: (aba: AbaPeriodo) => void): Coluna<LinhaPeriodo>[] {
+  return [
+    {
+      id: "periodo",
+      titulo: "Período",
+      align: "left",
+      cell: ({ periodo }) => (
+        <button
+          type="button"
+          className="text-left font-medium focus-visible:outline-2 focus-visible:outline-ring"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelecionar(periodo.id);
+          }}
+        >
+          {periodo.label}
+        </button>
+      ),
+    },
+    { id: "meta", titulo: "Meta", cell: ({ resumo }) => formatMoeda(resumo.meta), ordenar: ({ resumo }) => resumo.meta },
+    {
+      id: "realizado",
+      titulo: "Realizado",
+      cell: ({ periodo, resumo }) => (periodo.decorrido ? formatMoeda(resumo.realizado) : "—"),
+      ordenar: ({ periodo, resumo }) => (periodo.decorrido ? resumo.realizado : null),
+    },
+    {
+      id: "atingimento",
+      titulo: "Ating.",
+      cell: ({ resumo }) => <span className="font-semibold">{formatPercentual(resumo.atingimento)}</span>,
+      ordenar: ({ resumo }) => resumo.atingimento,
+    },
+    {
+      id: "status",
+      // Card estreito: só os pontos coloridos (o nome fica no título de cada um).
+      titulo: <span className="sr-only @[26rem]:not-sr-only">Situação</span>,
+      rotulo: "Situação",
+      align: "left",
+      cell: ({ resumo }) => <StatusMetaBadge status={resumo.status} compacto />,
+      ordenar: ({ resumo }) => ORDEM_STATUS[resumo.status],
+    },
+  ];
+}
+
 /** Meta, realizado e atingimento de cada aba; clicar numa linha abre a aba. */
 export function MetasPorPeriodo({
   linhas,
@@ -54,86 +98,54 @@ export function MetasPorPeriodo({
   onSelecionar,
   carregando,
 }: {
-  linhas: { periodo: PeriodoMeta; resumo: ResumoMeta }[];
+  linhas: LinhaPeriodo[];
   ativa: AbaPeriodo;
   onSelecionar: (aba: AbaPeriodo) => void;
   carregando: boolean;
 }) {
   return (
     <CardLista titulo="Metas por Período (total)" carregando={carregando}>
-      <table className="w-full border-collapse whitespace-nowrap text-xs">
-        <thead className="bg-secondary text-[11px] text-muted-foreground">
-          <tr>
-            <th className={`${th} text-left`}>Período</th>
-            <th className={`${th} text-right`}>Meta</th>
-            <th className={`${th} text-right`}>Realizado</th>
-            <th className={`${th} text-right`}>Ating.</th>
-            <th className={`${th} text-left`}>
-              {/* Card estreito: só os pontos coloridos (o nome fica no título de cada um). */}
-              <span className="sr-only @[26rem]:not-sr-only">Situação</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {linhas.map(({ periodo, resumo }) => (
-            <tr
-              key={periodo.id}
-              onClick={() => onSelecionar(periodo.id)}
-              className={`cursor-pointer border-t hover:bg-secondary/50 ${periodo.id === ativa ? "bg-primary/10" : ""}`}
-            >
-              <td className={td}>
-                <button
-                  type="button"
-                  className="text-left font-medium focus-visible:outline-2 focus-visible:outline-ring"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelecionar(periodo.id);
-                  }}
-                >
-                  {periodo.label}
-                </button>
-              </td>
-              <td className={`${td} text-right tabular-nums`}>{formatMoeda(resumo.meta)}</td>
-              <td className={`${td} text-right tabular-nums`}>{periodo.decorrido ? formatMoeda(resumo.realizado) : "—"}</td>
-              <td className={`${td} text-right font-semibold tabular-nums`}>{formatPercentual(resumo.atingimento)}</td>
-              <td className={td}>
-                <StatusMetaBadge status={resumo.status} compacto />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <DataTable
+        colunas={colunasPeriodos(onSelecionar)}
+        linhas={linhas}
+        chave={(l) => l.periodo.id}
+        aoClicar={(l) => onSelecionar(l.periodo.id)}
+        classeLinha={(l) => (l.periodo.id === ativa ? "bg-primary/10" : "")}
+        cabecalhoFixo={false}
+        densidade="mini"
+      />
     </CardLista>
   );
 }
 
+const COLUNAS_RANKING: Coluna<LinhaAcompanhamento>[] = [
+  {
+    id: "departamento",
+    titulo: "Departamento",
+    align: "left",
+    className: "w-full max-w-0 truncate",
+    cell: (l) => <span title={l.descricao}>{l.descricao}</span>,
+    ordenar: (l) => l.descricao,
+  },
+  {
+    id: "atingimento",
+    titulo: "Ating.",
+    cell: (l) => <span className="font-semibold">{formatPercentual(l.resumo.atingimento)}</span>,
+    ordenar: (l) => l.resumo.atingimento,
+  },
+  {
+    id: "diferenca",
+    titulo: "Diferença",
+    cell: (l) => (
+      <span className={(l.resumo.diferenca ?? 0) >= 0 ? "text-success" : "text-error"}>{formatMoeda(l.resumo.diferenca)}</span>
+    ),
+    ordenar: (l) => l.resumo.diferenca,
+  },
+  { id: "projecao", titulo: "Projeção", cell: (l) => formatMoeda(l.resumo.projecao), ordenar: (l) => l.resumo.projecao },
+];
+
 function TabelaRanking({ linhas }: { linhas: LinhaAcompanhamento[] }) {
-  return (
-    <table className="w-full border-collapse whitespace-nowrap text-xs">
-      <thead className="sticky top-0 bg-secondary text-[11px] text-muted-foreground">
-        <tr>
-          <th className={`${th} w-full text-left`}>Departamento</th>
-          <th className={`${th} text-right`}>Ating.</th>
-          <th className={`${th} text-right`}>Diferença</th>
-          <th className={`${th} text-right`}>Projeção</th>
-        </tr>
-      </thead>
-      <tbody>
-        {linhas.map((l) => (
-          <tr key={l.codigo} className="border-t hover:bg-secondary/50">
-            <td className={`${td} max-w-0 truncate`} title={l.descricao}>
-              {l.descricao}
-            </td>
-            <td className={`${td} text-right font-semibold tabular-nums`}>{formatPercentual(l.resumo.atingimento)}</td>
-            <td className={`${td} text-right tabular-nums ${(l.resumo.diferenca ?? 0) >= 0 ? "text-success" : "text-error"}`}>
-              {formatMoeda(l.resumo.diferenca)}
-            </td>
-            <td className={`${td} text-right tabular-nums`}>{formatMoeda(l.resumo.projecao)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+  return <DataTable colunas={COLUNAS_RANKING} linhas={linhas} chave={(l) => String(l.codigo)} densidade="mini" vazio={null} />;
 }
 
 /** Realizado ÷ meta esperada até a referência (critério de risco e de melhor desempenho). */
@@ -180,6 +192,33 @@ export function RankingDepartamentos({
   );
 }
 
+const COLUNAS_MARGEM: Coluna<LinhaAcompanhamento>[] = [
+  {
+    id: "departamento",
+    titulo: "Departamento",
+    align: "left",
+    className: "w-full max-w-0 truncate",
+    cell: (l) => <span title={l.descricao}>{l.descricao}</span>,
+    ordenar: (l) => l.descricao,
+  },
+  { id: "meta", titulo: "Meta", cell: (l) => formatPercentual(l.resumo.metaMargem), ordenar: (l) => l.resumo.metaMargem },
+  { id: "atual", titulo: "Atual", cell: (l) => formatPercentual(l.resumo.margem), ordenar: (l) => l.resumo.margem },
+  {
+    id: "diferenca",
+    titulo: "Dif.",
+    cell: (l) => (
+      <span
+        className={`font-semibold ${
+          l.resumo.statusMargem === "ok" ? "text-success" : l.resumo.statusMargem === "atencao" ? "text-warning" : "text-error"
+        }`}
+      >
+        {formatPontos(l.resumo.diferencaMargem).replace(" p.p.", "")}
+      </span>
+    ),
+    ordenar: (l) => l.resumo.diferencaMargem,
+  },
+];
+
 /** Meta de margem × margem atual por departamento, pior diferença primeiro. */
 export function SituacaoMargem({ linhas, carregando }: { linhas: LinhaAcompanhamento[]; carregando: boolean }) {
   const comMeta = linhas
@@ -189,34 +228,7 @@ export function SituacaoMargem({ linhas, carregando }: { linhas: LinhaAcompanham
     <CardLista titulo="Situação da Margem Bruta" carregando={carregando}>
       {comMeta.length ? (
         <div className="max-h-[8.6rem] overflow-y-auto">
-          <table className="w-full border-collapse whitespace-nowrap text-xs">
-            <thead className="sticky top-0 bg-secondary text-[11px] text-muted-foreground">
-              <tr>
-                <th className={`${th} w-full text-left`}>Departamento</th>
-                <th className={`${th} text-right`}>Meta</th>
-                <th className={`${th} text-right`}>Atual</th>
-                <th className={`${th} text-right`}>Dif.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comMeta.map((l) => (
-                <tr key={l.codigo} className="border-t hover:bg-secondary/50">
-                  <td className={`${td} max-w-0 truncate`} title={l.descricao}>
-                    {l.descricao}
-                  </td>
-                  <td className={`${td} text-right tabular-nums`}>{formatPercentual(l.resumo.metaMargem)}</td>
-                  <td className={`${td} text-right tabular-nums`}>{formatPercentual(l.resumo.margem)}</td>
-                  <td
-                    className={`${td} text-right font-semibold tabular-nums ${
-                      l.resumo.statusMargem === "ok" ? "text-success" : l.resumo.statusMargem === "atencao" ? "text-warning" : "text-error"
-                    }`}
-                  >
-                    {formatPontos(l.resumo.diferencaMargem).replace(" p.p.", "")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable colunas={COLUNAS_MARGEM} linhas={comMeta} chave={(l) => String(l.codigo)} densidade="mini" />
         </div>
       ) : (
         <Vazio>Sem meta de margem por departamento.</Vazio>

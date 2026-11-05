@@ -1,11 +1,12 @@
 "use client";
 
 import Icon from "@mdi/react";
-import { mdiChevronRight, mdiDownload, mdiMagnify, mdiStoreOutline } from "@mdi/js";
+import { mdiDownload, mdiMagnify, mdiStoreOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
-import { Fragment, useDeferredValue, useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { Delta } from "@/components/kpi/kpi-card";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Segmented } from "@/components/ui/segmented";
 import { Spinner } from "@/components/ui/spinner";
@@ -40,43 +41,50 @@ function Pendente({ children, valor }: { children: React.ReactNode; valor: unkno
   return children;
 }
 
-const th = "px-2.5 py-1.5 font-medium";
-const td = "px-2.5 py-1 text-right tabular-nums";
+const delta = (v: number | null | undefined, unidade: "%" | "pp") => <Delta value={v ?? null} unidade={unidade} maiorMelhor />;
 
-function Celulas({ l }: { l: LinhaDesempenho }) {
-  return (
-    <>
-      <td className={`${td} border-l`}>{formatMoeda(l.venda)}</td>
-      <td className={td}>
-        <Delta value={l.variacaoVenda} unidade="%" maiorMelhor />
-      </td>
-      <td className={`${td} border-l`}>{formatPercentual(l.margem)}</td>
-      <td className={td}>
-        <Delta value={l.variacaoMargemPp} unidade="pp" maiorMelhor />
-      </td>
-      <td className={`${td} border-l`}>{formatMoeda(l.lucro)}</td>
-      <td className={td}>
-        <Delta value={l.variacaoLucro} unidade="%" maiorMelhor />
-      </td>
-      <td className={`${td} border-l`}>
-        <Pendente valor={l.cupons}>{formatInteiro(l.cupons ?? 0)}</Pendente>
-      </td>
-      <td className={td}>
-        <Pendente valor={l.variacaoCupons}>
-          <Delta value={l.variacaoCupons ?? null} unidade="%" maiorMelhor />
-        </Pendente>
-      </td>
-      <td className={`${td} border-l`}>
-        <Pendente valor={l.itensPorCupom}>{formatDecimal(l.itensPorCupom)}</Pendente>
-      </td>
-      <td className={td}>
-        <Pendente valor={l.variacaoItensPorCupom}>
-          <Delta value={l.variacaoItensPorCupom ?? null} unidade="%" maiorMelhor />
-        </Pendente>
-      </td>
-      <td className={`${td} border-l`}>{formatPercentual(l.participacao)}</td>
-    </>
-  );
+function colunasDesempenho(rotuloNivel: string): Coluna<LinhaDesempenho>[] {
+  return [
+    { id: "nome", titulo: rotuloNivel, subtitulo: "Nome", align: "left", cell: (l) => l.descricao, ordenar: (l) => l.descricao },
+    { id: "venda", titulo: "Venda", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.venda), ordenar: (l) => l.venda },
+    { id: "var-venda", titulo: "Venda", subtitulo: "Var. %", cell: (l) => delta(l.variacaoVenda, "%"), ordenar: (l) => l.variacaoVenda },
+    { id: "margem", titulo: "Margem Bruta", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.margem), ordenar: (l) => l.margem },
+    { id: "var-margem", titulo: "Margem Bruta", subtitulo: "Var. p.p.", cell: (l) => delta(l.variacaoMargemPp, "pp"), ordenar: (l) => l.variacaoMargemPp },
+    { id: "lucro", titulo: "Lucro Bruto", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.lucro), ordenar: (l) => l.lucro },
+    { id: "var-lucro", titulo: "Lucro Bruto", subtitulo: "Var. %", cell: (l) => delta(l.variacaoLucro, "%"), ordenar: (l) => l.variacaoLucro },
+    {
+      id: "cupons",
+      titulo: "Cupons (PDV)",
+      subtitulo: "Qtd",
+      divisor: true,
+      dica: "Cupons do PDV com ao menos um item do nível",
+      cell: (l) => <Pendente valor={l.cupons}>{formatInteiro(l.cupons ?? 0)}</Pendente>,
+      ordenar: (l) => l.cupons,
+    },
+    {
+      id: "var-cupons",
+      titulo: "Cupons (PDV)",
+      subtitulo: "Var. %",
+      cell: (l) => <Pendente valor={l.variacaoCupons}>{delta(l.variacaoCupons, "%")}</Pendente>,
+      ordenar: (l) => l.variacaoCupons,
+    },
+    {
+      id: "itens",
+      titulo: "Itens/Cupom",
+      subtitulo: "Qtd",
+      divisor: true,
+      cell: (l) => <Pendente valor={l.itensPorCupom}>{formatDecimal(l.itensPorCupom)}</Pendente>,
+      ordenar: (l) => l.itensPorCupom,
+    },
+    {
+      id: "var-itens",
+      titulo: "Itens/Cupom",
+      subtitulo: "Var. %",
+      cell: (l) => <Pendente valor={l.variacaoItensPorCupom}>{delta(l.variacaoItensPorCupom, "%")}</Pendente>,
+      ordenar: (l) => l.variacaoItensPorCupom,
+    },
+    { id: "participacao", titulo: "Participação", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.participacao), ordenar: (l) => l.participacao },
+  ];
 }
 
 /**
@@ -151,56 +159,6 @@ export function DesempenhoTable({ filtros, totalCupons }: { filtros: Filtros; to
     });
 
   const rotuloNivel = NIVEIS.find((n) => n.value === nivel)!.label;
-
-  function linhas(profundidade: number, lista: LinhaDesempenho[]): React.ReactNode {
-    const nivelLinha = niveis[profundidade];
-    const temFilhos = profundidade < niveis.length - 1;
-    return lista.map((l) => {
-      const chave = `${nivelLinha}:${l.codigo}`;
-      const aberto = abertos.has(chave);
-      const filhos = aberto ? linhasPorNivel[profundidade + 1].filter((f) => f.pai === l.codigo) : [];
-      const filhosCarregando = aberto && carregando(vendas[profundidade + 1]);
-      return (
-        <Fragment key={chave}>
-          <tr className={`border-t hover:bg-secondary/50 ${profundidade ? "bg-secondary/25" : ""}`}>
-            <td className="py-1 pr-2.5 font-medium" style={{ paddingLeft: `${0.5 + profundidade * 1.1}rem` }}>
-              <span className="flex items-center gap-1">
-                {temFilhos ? (
-                  <button
-                    type="button"
-                    onClick={() => alternar(chave)}
-                    aria-expanded={aberto}
-                    aria-label={`${aberto ? "Recolher" : "Expandir"} ${l.descricao}`}
-                    className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-                  >
-                    <Icon
-                      path={mdiChevronRight}
-                      size={0.7}
-                      className={`transition-transform ${aberto ? "rotate-90" : ""}`}
-                    />
-                  </button>
-                ) : (
-                  <span className="w-5 shrink-0" />
-                )}
-                <span className={profundidade ? "font-normal" : ""}>{l.descricao}</span>
-              </span>
-            </td>
-            <Celulas l={l} />
-          </tr>
-          {filhosCarregando && (
-            <tr className="border-t">
-              <td colSpan={12} className="py-1.5 text-muted-foreground" style={{ paddingLeft: `${2 + profundidade * 1.1}rem` }}>
-                <span className="inline-flex items-center gap-2 text-xs">
-                  <Spinner className="size-3.5" /> Carregando…
-                </span>
-              </td>
-            </tr>
-          )}
-          {!filhosCarregando && linhas(profundidade + 1, filhos)}
-        </Fragment>
-      );
-    });
-  }
 
   const exportar = () => {
     const linhasCsv: (string | number | null | undefined)[][] = [];
@@ -289,53 +247,23 @@ export function DesempenhoTable({ filtros, totalCupons }: { filtros: Filtros; to
           <p className="py-10 text-center text-sm text-error">{base.error.message}</p>
         ) : (
           <div className="min-h-0 flex-1 overflow-auto rounded-xl border">
-            {/* Sem quebra de linha: a tabela cresce até o conteúdo e o container rola na horizontal. */}
-            <table className="w-full border-collapse whitespace-nowrap text-[13px]">
-              <thead className="sticky top-0 z-10 bg-secondary text-xs text-muted-foreground">
-                <tr>
-                  <th rowSpan={2} className={`${th} text-left`}>
-                    {rotuloNivel}
-                  </th>
-                  <th colSpan={2} className={`${th} border-l`}>Venda</th>
-                  <th colSpan={2} className={`${th} border-l`}>Margem Bruta</th>
-                  <th colSpan={2} className={`${th} border-l`}>Lucro Bruto</th>
-                  <th colSpan={2} className={`${th} border-l`} title="Cupons do PDV com ao menos um item do nível">
-                    Cupons (PDV)
-                  </th>
-                  <th colSpan={2} className={`${th} border-l`}>Itens/Cupom</th>
-                  <th className={`${th} border-l`}>Participação</th>
-                </tr>
-                <tr>
-                  <th className={`${th} border-l text-right`}>Valor</th>
-                  <th className={`${th} text-right`}>Var. %</th>
-                  <th className={`${th} border-l text-right`}>%</th>
-                  <th className={`${th} text-right`}>Var. p.p.</th>
-                  <th className={`${th} border-l text-right`}>Valor</th>
-                  <th className={`${th} text-right`}>Var. %</th>
-                  <th className={`${th} border-l text-right`}>Qtd</th>
-                  <th className={`${th} text-right`}>Var. %</th>
-                  <th className={`${th} border-l text-right`}>Qtd</th>
-                  <th className={`${th} text-right`}>Var. %</th>
-                  <th className={`${th} border-l text-right`}>%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {linhas(0, raiz)}
-                {!raiz.length && (
-                  <tr>
-                    <td colSpan={12} className="py-8 text-center text-muted-foreground">
-                      Nenhum resultado.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-              <tfoot className="sticky bottom-0 bg-card font-semibold">
-                <tr className="border-t-2">
-                  <td className="px-2.5 py-1.5">Total</td>
-                  <Celulas l={total} />
-                </tr>
-              </tfoot>
-            </table>
+            <DataTable
+              colunas={colunasDesempenho(rotuloNivel)}
+              linhas={raiz}
+              chave={(l, p) => `${niveis[p]}:${l.codigo}`}
+              total={total}
+              rotuloTotal="Total"
+              arvore={{
+                abertas: abertos,
+                alternar,
+                expansivel: (p) => p < niveis.length - 1,
+                filhos: (l, p) => ({
+                  linhas: linhasPorNivel[p + 1].filter((f) => f.pai === l.codigo),
+                  carregando: carregando(vendas[p + 1]),
+                }),
+                descricao: (l) => l.descricao,
+              }}
+            />
           </div>
         )}
         {/* z-20: acima do cabeçalho fixo (sticky) da tabela. */}

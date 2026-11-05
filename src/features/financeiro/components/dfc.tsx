@@ -11,13 +11,14 @@ import {
   mdiTableLarge,
 } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
-import { Fragment, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ABAS_FINANCEIRO, AbasModulo } from "@/components/abas-modulo";
 import { useAvisos } from "@/components/avisos";
 import { FiliaisSelect } from "@/components/filtros/filiais-select";
 import { KpiCard, SemDados } from "@/components/kpi/kpi-card";
 import { NaoIntegrado } from "@/components/nao-integrado";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { Field } from "@/components/ui/field";
 import { ResizableRow } from "@/components/ui/resizable-row";
 import { Select } from "@/components/ui/select";
@@ -103,8 +104,49 @@ const TOTAIS = [
   ["Saldo Final de Caixa e Equivalentes", "Saldos das contas e caixas (P42)"],
 ] as const;
 
-const th = "px-2.5 py-1.5 font-medium";
 const vazio = <span className="text-muted-foreground">—</span>;
+
+type LinhaDfc =
+  | { tipo: "atividade"; chave: string; label: string; cor: string }
+  | { tipo: "grupo"; chave: string; label: string }
+  | { tipo: "linha"; chave: string; label: string; fonte: string }
+  | { tipo: "total"; chave: string; label: string; fonte: string };
+
+const LINHAS_DFC: LinhaDfc[] = ATIVIDADES.flatMap((a) => [
+  { tipo: "atividade" as const, chave: a.id, label: a.label, cor: a.cor },
+  ...a.grupos.flatMap((g) => [
+    ...(g.label ? [{ tipo: "grupo" as const, chave: `${a.id}-${g.label}`, label: g.label }] : []),
+    ...g.linhas.map(([label, fonte]) => ({ tipo: "linha" as const, chave: `${a.id}-${label}`, label, fonte })),
+  ]),
+]);
+
+const LINHAS_TOTAIS: LinhaDfc[] = TOTAIS.map(([label, fonte]) => ({ tipo: "total", chave: label, label, fonte }));
+
+function colunasDfc(mes: string, mesComparacao: string): Coluna<LinhaDfc>[] {
+  const valor = (l: LinhaDfc) => (l.tipo === "grupo" ? null : vazio);
+  return [
+    {
+      id: "categoria",
+      titulo: "Categoria",
+      align: "left",
+      className: "max-w-72 truncate",
+      cell: (l) => (
+        <span className={l.tipo === "linha" ? "pl-4" : ""} title={l.label}>
+          {l.label}
+        </span>
+      ),
+    },
+    { id: "mes", titulo: formatMesAno(mes), cell: valor },
+    { id: "comparacao", titulo: formatMesAno(mesComparacao), cell: valor },
+    {
+      id: "fonte",
+      titulo: "Dado necessário",
+      align: "left",
+      className: "text-xs font-normal text-muted-foreground",
+      cell: (l) => (l.tipo === "linha" || l.tipo === "total" ? l.fonte : null),
+    },
+  ];
+}
 
 function DfcTabela({ mes, mesComparacao }: { mes: string; mesComparacao: string }) {
   return (
@@ -121,59 +163,18 @@ function DfcTabela({ mes, mesComparacao }: { mes: string; mesComparacao: string 
       </CardHeader>
       <div className="relative flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
         <div className="min-h-0 flex-1 overflow-auto rounded-xl border">
-          <table className="w-full border-collapse whitespace-nowrap text-[13px]">
-            <thead className="sticky top-0 z-10 bg-secondary text-xs text-muted-foreground">
-              <tr>
-                <th className={`${th} text-left`}>Categoria</th>
-                <th className={`${th} text-right`}>{formatMesAno(mes)}</th>
-                <th className={`${th} text-right`}>{formatMesAno(mesComparacao)}</th>
-                <th className={`${th} text-left`}>Dado necessário</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ATIVIDADES.map((a) => (
-                <Fragment key={a.id}>
-                  <tr className={`border-t font-semibold ${a.cor}`}>
-                    <td className="px-2.5 py-1.5">{a.label}</td>
-                    <td className="px-2.5 py-1.5 text-right">{vazio}</td>
-                    <td className="px-2.5 py-1.5 text-right">{vazio}</td>
-                    <td />
-                  </tr>
-                  {a.grupos.map((g) => (
-                    <Fragment key={g.label ?? a.id}>
-                      {g.label && (
-                        <tr className="border-t text-xs font-semibold text-muted-foreground">
-                          <td className="py-1 pl-4 pr-2.5" colSpan={4}>
-                            {g.label}
-                          </td>
-                        </tr>
-                      )}
-                      {g.linhas.map(([linha, fonte]) => (
-                        <tr key={linha} className="border-t hover:bg-secondary/50">
-                          <td className="max-w-72 truncate py-1 pl-7 pr-2.5" title={linha}>
-                            {linha}
-                          </td>
-                          <td className="px-2.5 py-1 text-right">{vazio}</td>
-                          <td className="px-2.5 py-1 text-right">{vazio}</td>
-                          <td className="px-2.5 py-1 text-xs text-muted-foreground">{fonte}</td>
-                        </tr>
-                      ))}
-                    </Fragment>
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-            <tfoot className="sticky bottom-0 bg-card font-semibold">
-              {TOTAIS.map(([linha, fonte], i) => (
-                <tr key={linha} className={i === 0 ? "border-t-2" : "border-t"}>
-                  <td className="px-2.5 py-1.5">{linha}</td>
-                  <td className="px-2.5 py-1.5 text-right">{vazio}</td>
-                  <td className="px-2.5 py-1.5 text-right">{vazio}</td>
-                  <td className="px-2.5 py-1.5 text-xs font-normal text-muted-foreground">{fonte}</td>
-                </tr>
-              ))}
-            </tfoot>
-          </table>
+          <DataTable
+            colunas={colunasDfc(mes, mesComparacao)}
+            linhas={LINHAS_DFC}
+            chave={(l) => l.chave}
+            total={LINHAS_TOTAIS}
+            classeLinha={(l) => (l.tipo === "atividade" ? `font-semibold ${l.cor}` : "")}
+            linhaInteira={(l) =>
+              l.tipo === "grupo" ? (
+                <span className="block py-1 pl-4 pr-2.5 text-xs font-semibold text-muted-foreground">{l.label}</span>
+              ) : null
+            }
+          />
         </div>
       </div>
     </Card>

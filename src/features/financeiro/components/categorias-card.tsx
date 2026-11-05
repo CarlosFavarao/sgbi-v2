@@ -39,7 +39,7 @@ function Lista({
           {categorias.map((c) => (
             <li
               key={c.categoria}
-              className="grid grid-cols-[minmax(0,1fr)_3rem_auto] items-center gap-1.5 text-[11px]"
+              className="grid grid-cols-[minmax(0,1fr)_3rem_6.5rem] items-center gap-1.5 text-[11px]"
               title={`${c.categoria}: ${formatMoeda(c.valor)} (${formatPercentual(c.participacao)})`}
             >
               <span className="truncate">{c.categoria}</span>

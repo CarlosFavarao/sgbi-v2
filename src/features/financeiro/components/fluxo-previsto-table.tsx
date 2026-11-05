@@ -4,6 +4,7 @@ import Icon from "@mdi/react";
 import { mdiCalendarArrowRight, mdiDownload } from "@mdi/js";
 import { useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Segmented } from "@/components/ui/segmented";
 import { baixarCsv } from "@/lib/csv";
@@ -32,8 +33,43 @@ const STATUS = {
   critico: { label: "Crítico", classe: "text-error", ponto: "bg-error" },
 } as const;
 
-const th = "px-2.5 py-1.5 font-medium";
-const td = "px-2.5 py-1 text-right tabular-nums";
+const ORDEM_STATUS = { ok: 0, atencao: 1, critico: 2 } as const;
+
+function colunasFluxo(granularidade: Granularidade): Coluna<LinhaPrevista>[] {
+  return [
+    { id: "data", titulo: "Data", align: "left", className: "font-medium", cell: (l) => rotulo(l, granularidade), ordenar: (l) => l.inicio },
+    { id: "entradas", titulo: "Entradas previstas", cell: (l) => formatMoeda(l.entradas), ordenar: (l) => l.entradas },
+    { id: "saidas", titulo: "Saídas previstas", cell: (l) => formatMoeda(l.saidas), ordenar: (l) => l.saidas },
+    {
+      id: "saldo",
+      titulo: `Saldo do ${granularidade === "dia" ? "dia" : "período"}`,
+      cell: (l) => <span className={l.saldo < 0 ? "text-error" : "text-success"}>{formatMoeda(l.saldo)}</span>,
+      ordenar: (l) => l.saldo,
+    },
+    {
+      id: "acumulado",
+      titulo: "Acumulado",
+      dica: "Acumulado a partir da referência, sem o saldo bancário de hoje",
+      cell: (l) => <span className={l.acumulado < 0 ? "text-error" : ""}>{formatMoeda(l.acumulado)}</span>,
+      ordenar: (l) => l.acumulado,
+    },
+    {
+      id: "status",
+      titulo: "Status",
+      align: "left",
+      cell: (l) => {
+        const s = STATUS[l.status];
+        return (
+          <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${s.classe}`}>
+            <span className={`size-2 rounded-full ${s.ponto}`} aria-hidden />
+            {s.label}
+          </span>
+        );
+      },
+      ordenar: (l) => ORDEM_STATUS[l.status],
+    },
+  ];
+}
 
 /** Fluxo previsto dos próximos dias: só títulos em aberto e cartões a liquidar (P43). */
 export function FluxoPrevistoTable({
@@ -86,43 +122,7 @@ export function FluxoPrevistoTable({
       </CardHeader>
       <div className="relative flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2" aria-busy={carregando}>
         <div className="min-h-0 flex-1 overflow-auto rounded-xl border">
-          <table className="w-full border-collapse whitespace-nowrap text-[13px]">
-            <thead className="sticky top-0 z-10 bg-secondary text-xs text-muted-foreground">
-              <tr>
-                <th className={`${th} text-left`}>Data</th>
-                <th className={`${th} text-right`}>Entradas previstas</th>
-                <th className={`${th} text-right`}>Saídas previstas</th>
-                <th className={`${th} text-right`}>Saldo do {granularidade === "dia" ? "dia" : "período"}</th>
-                <th
-                  className={`${th} text-right`}
-                  title="Acumulado a partir da referência, sem o saldo bancário de hoje"
-                >
-                  Acumulado
-                </th>
-                <th className={`${th} text-left`}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {linhas.map((l) => {
-                const s = STATUS[l.status];
-                return (
-                  <tr key={l.chave} className="border-t hover:bg-secondary/50">
-                    <td className="px-2.5 py-1 font-medium">{rotulo(l, granularidade)}</td>
-                    <td className={td}>{formatMoeda(l.entradas)}</td>
-                    <td className={td}>{formatMoeda(l.saidas)}</td>
-                    <td className={`${td} ${l.saldo < 0 ? "text-error" : "text-success"}`}>{formatMoeda(l.saldo)}</td>
-                    <td className={`${td} ${l.acumulado < 0 ? "text-error" : ""}`}>{formatMoeda(l.acumulado)}</td>
-                    <td className="px-2.5 py-1">
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${s.classe}`}>
-                        <span className={`size-2 rounded-full ${s.ponto}`} aria-hidden />
-                        {s.label}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <DataTable colunas={colunasFluxo(granularidade)} linhas={linhas} chave={(l) => l.chave} />
         </div>
         <LoadingOverlay ativo={carregando} className="z-20 rounded-b-2xl" />
       </div>

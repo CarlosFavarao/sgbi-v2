@@ -4,6 +4,7 @@ import Icon from "@mdi/react";
 import { mdiArrowRight, mdiDownload } from "@mdi/js";
 import { Delta } from "@/components/kpi/kpi-card";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { baixarCsv } from "@/lib/csv";
@@ -19,65 +20,72 @@ const TIPO: Record<ListaProdutos, "variacao" | "margem"> = {
   "menor-margem": "margem",
 };
 
-const th = "px-2 py-1 font-medium";
-const td = "px-2 py-[3px]";
+function colunasProdutos(tipo: "variacao" | "margem", lista: ListaProdutos): Coluna<ProdutoResumo>[] {
+  const venda: Coluna<ProdutoResumo> = { id: "venda", titulo: "Venda", cell: (p) => formatMoeda(p.venda), ordenar: (p) => p.venda };
+  return [
+    {
+      id: "codigo",
+      titulo: "Código",
+      align: "left",
+      className: "hidden text-muted-foreground @[24rem]:table-cell",
+      cell: (p) => p.codigo,
+      ordenar: (p) => p.codigo,
+    },
+    {
+      id: "produto",
+      titulo: "Produto",
+      align: "left",
+      // Nome longo: corta com reticências e mostra o nome completo no título.
+      className: "w-full max-w-0 truncate",
+      cell: (p) => <span title={`${p.codigo} · ${p.descricao} · ${p.departamento}`}>{p.descricao}</span>,
+      ordenar: (p) => p.descricao,
+    },
+    {
+      id: "departamento",
+      titulo: "Dep.",
+      align: "left",
+      className: "hidden max-w-24 truncate text-muted-foreground @[26rem]:table-cell",
+      cell: (p) => <span title={p.departamento}>{p.departamento}</span>,
+      ordenar: (p) => p.departamento,
+    },
+    ...(tipo === "variacao"
+      ? [
+          venda,
+          {
+            id: "variacao",
+            titulo: "Var. %",
+            cell: (p: ProdutoResumo) => <Delta value={p.variacao} unidade="%" maiorMelhor />,
+            ordenar: (p: ProdutoResumo) => p.variacao,
+          },
+        ]
+      : [
+          {
+            id: "margem",
+            titulo: "Margem",
+            cell: (p: ProdutoResumo) => (
+              <span className={`font-semibold ${lista === "maior-margem" ? "text-success" : "text-error"}`}>
+                {formatPercentual(p.margem)}
+              </span>
+            ),
+            ordenar: (p: ProdutoResumo) => p.margem,
+          },
+          venda,
+        ]),
+  ];
+}
 
 function Tabela({ produtos, lista, compacta }: { produtos: ProdutoResumo[]; lista: ListaProdutos; compacta?: boolean }) {
-  const tipo = TIPO[lista];
   return (
-    <table className="w-full border-collapse whitespace-nowrap text-xs">
-      <thead className={`text-[11px] text-muted-foreground ${compacta ? "" : "sticky top-0 z-10"} bg-secondary`}>
-        <tr>
-          <th className={`${th} hidden text-left @[24rem]:table-cell`}>Código</th>
-          <th className={`${th} w-full text-left`}>Produto</th>
-          <th className={`${th} hidden text-left @[26rem]:table-cell`}>Dep.</th>
-          {tipo === "variacao" ? (
-            <>
-              <th className={`${th} text-right`}>Venda</th>
-              <th className={`${th} text-right`}>Var. %</th>
-            </>
-          ) : (
-            <>
-              <th className={`${th} text-right`}>Margem</th>
-              <th className={`${th} text-right`}>Venda</th>
-            </>
-          )}
-        </tr>
-      </thead>
-      <tbody>
-        {produtos.map((p, i) => (
-          <tr
-            key={p.codigo}
-            // Telas baixas (ex.: 1536 × 864): o card mostra uma linha a menos para caber sem rolar.
-            className={`border-t hover:bg-secondary/50 ${compacta && i === 4 ? "[@media(max-height:900px)]:hidden" : ""}`}
-          >
-            <td className={`${td} hidden tabular-nums text-muted-foreground @[24rem]:table-cell`}>{p.codigo}</td>
-            {/* Nome longo: corta com reticências e mostra o nome completo no título. */}
-            <td className={`${td} max-w-0 truncate`} title={`${p.codigo} · ${p.descricao} · ${p.departamento}`}>
-              {p.descricao}
-            </td>
-            <td className={`${td} hidden max-w-24 truncate text-muted-foreground @[26rem]:table-cell`} title={p.departamento}>
-              {p.departamento}
-            </td>
-            {tipo === "variacao" ? (
-              <>
-                <td className={`${td} text-right tabular-nums`}>{formatMoeda(p.venda)}</td>
-                <td className={`${td} text-right`}>
-                  <Delta value={p.variacao} unidade="%" maiorMelhor />
-                </td>
-              </>
-            ) : (
-              <>
-                <td className={`${td} text-right font-semibold tabular-nums ${lista === "maior-margem" ? "text-success" : "text-error"}`}>
-                  {formatPercentual(p.margem)}
-                </td>
-                <td className={`${td} text-right tabular-nums`}>{formatMoeda(p.venda)}</td>
-              </>
-            )}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <DataTable
+      colunas={colunasProdutos(TIPO[lista], lista)}
+      linhas={produtos}
+      chave={(p) => String(p.codigo)}
+      densidade="compacto"
+      cabecalhoFixo={!compacta}
+      vazio={null}
+      // Telas baixas (ex.: 1536 × 864): o card mostra uma linha a menos para caber sem rolar.
+      classeLinha={(_, __, i) => (compacta && i === 4 ? "[@media(max-height:900px)]:hidden" : "")}
+    />
   );
 }
 

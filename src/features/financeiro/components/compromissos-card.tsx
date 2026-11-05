@@ -4,6 +4,7 @@ import Icon from "@mdi/react";
 import { mdiArrowRight } from "@mdi/js";
 import { useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Segmented } from "@/components/ui/segmented";
@@ -18,47 +19,52 @@ const FILTROS: { value: Filtro; label: string }[] = [
   { value: "entrada", label: "Recebimentos" },
 ];
 
-const th = "px-2 py-1 font-medium";
-const td = "px-2 py-[3px]";
+const COLUNAS: Coluna<Compromisso>[] = [
+  { id: "vencimento", titulo: "Vencimento", align: "left", className: "tabular-nums", cell: (c) => formatData(c.data), ordenar: (c) => c.data },
+  {
+    id: "descricao",
+    titulo: "Descrição",
+    align: "left",
+    className: "w-full max-w-0 truncate",
+    cell: (c) => <span title={c.descricao}>{c.descricao}</span>,
+    ordenar: (c) => c.descricao,
+  },
+  {
+    id: "tipo",
+    titulo: "Tipo",
+    align: "left",
+    cell: (c) => (
+      <span className={c.tipo === "entrada" ? "text-success" : "text-error"}>
+        {c.tipo === "entrada" ? "Recebimento" : "Pagamento"}
+      </span>
+    ),
+    ordenar: (c) => c.tipo,
+  },
+  { id: "valor", titulo: "Valor", cell: (c) => formatMoeda(c.valor), ordenar: (c) => c.valor },
+  {
+    id: "status",
+    titulo: "Status",
+    align: "left",
+    cell: (c) => (
+      <span
+        className={`inline-flex items-center gap-1.5 font-medium ${c.situacao === "vencido" ? "text-error" : "text-warning"}`}
+      >
+        <span className={`size-2 rounded-full ${c.situacao === "vencido" ? "bg-error" : "bg-warning"}`} aria-hidden />
+        {c.situacao === "vencido" ? "Vencido" : "A vencer"}
+      </span>
+    ),
+    ordenar: (c) => c.situacao,
+  },
+];
 
 function Tabela({ compromissos }: { compromissos: Compromisso[] }) {
   return (
-    <table className="w-full border-collapse whitespace-nowrap text-xs">
-      <thead className="sticky top-0 bg-secondary text-[11px] text-muted-foreground">
-        <tr>
-          <th className={`${th} text-left`}>Vencimento</th>
-          <th className={`${th} w-full text-left`}>Descrição</th>
-          <th className={`${th} text-left`}>Tipo</th>
-          <th className={`${th} text-right`}>Valor</th>
-          <th className={`${th} text-left`}>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {compromissos.map((c, i) => (
-          <tr key={`${c.data}-${c.descricao}-${i}`} className="border-t hover:bg-secondary/50">
-            <td className={`${td} tabular-nums`}>{formatData(c.data)}</td>
-            <td className={`${td} max-w-0 truncate`} title={c.descricao}>
-              {c.descricao}
-            </td>
-            <td className={`${td} ${c.tipo === "entrada" ? "text-success" : "text-error"}`}>
-              {c.tipo === "entrada" ? "Recebimento" : "Pagamento"}
-            </td>
-            <td className={`${td} text-right tabular-nums`}>{formatMoeda(c.valor)}</td>
-            <td className={td}>
-              <span
-                className={`inline-flex items-center gap-1.5 font-medium ${c.situacao === "vencido" ? "text-error" : "text-warning"}`}
-              >
-                <span
-                  className={`size-2 rounded-full ${c.situacao === "vencido" ? "bg-error" : "bg-warning"}`}
-                  aria-hidden
-                />
-                {c.situacao === "vencido" ? "Vencido" : "A vencer"}
-              </span>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <DataTable
+      colunas={COLUNAS}
+      linhas={compromissos}
+      chave={(c) => `${c.data}-${c.tipo}-${c.situacao}-${c.descricao}-${c.valor}`}
+      densidade="compacto"
+    />
   );
 }
 

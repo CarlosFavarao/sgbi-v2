@@ -1,14 +1,15 @@
 "use client";
 
+import { SituacaoPontos } from "@/components/situacao-pontos";
 import Icon from "@mdi/react";
-import { mdiChevronRight, mdiDownload, mdiMagnify, mdiTarget } from "@mdi/js";
+import { mdiDownload, mdiMagnify, mdiTarget } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
-import { Fragment, useDeferredValue, useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { Delta } from "@/components/kpi/kpi-card";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Segmented } from "@/components/ui/segmented";
-import { Spinner } from "@/components/ui/spinner";
 import { variacao } from "@/lib/calc";
 import { baixarCsv } from "@/lib/csv";
 import { formatMoeda, formatPercentual } from "@/lib/format";
@@ -16,7 +17,7 @@ import { resumirMeta, type ResumoMeta } from "../compute";
 import { metasQueries } from "../queries";
 import type { FiltrosMetas, LinhaMetaNivel, Nivel, PeriodoMeta } from "../types";
 import { DO_PERIODO } from "./kpis-metas";
-import { ROTULO_STATUS, StatusMargemBadge, StatusMetaBadge } from "./status";
+import { ORDEM_MARGEM, ORDEM_STATUS, PONTOS_MARGEM, ROTULO_STATUS, StatusMargemBadge, StatusMetaBadge } from "./status";
 
 const ORDEM: Nivel[] = ["departamento", "grupo", "subgrupo"];
 
@@ -53,49 +54,92 @@ export function calcularLinha(l: LinhaMetaNivel, aba: PeriodoMeta): LinhaAcompan
 }
 
 const carregando = (q: { isPending: boolean; isPlaceholderData: boolean }) => q.isPending || q.isPlaceholderData;
-const th = "px-2.5 py-1.5 font-medium";
-const td = "px-2.5 py-1 text-right tabular-nums";
+const SEM_VALOR = <span className="text-muted-foreground">—</span>;
 
 /** Moeda colorida pelo sinal (diferença para a meta). */
 function Sinal({ value, children }: { value: number | null; children: React.ReactNode }) {
-  if (value == null) return <span className="text-muted-foreground">—</span>;
+  if (value == null) return SEM_VALOR;
   return <span className={value >= 0 ? "text-success" : "text-error"}>{children}</span>;
 }
 
-function Celulas({ l }: { l: LinhaAcompanhamento }) {
-  const r = l.resumo;
-  return (
-    <>
-      <td className={`${td} border-l`}>{r.meta != null ? formatMoeda(r.meta) : <span className="text-muted-foreground">—</span>}</td>
-      <td className={`${td} border-l`}>{formatMoeda(r.realizado)}</td>
-      <td className={td}>
-        <Delta value={l.variacaoVenda} unidade="%" maiorMelhor />
-      </td>
-      <td className={`${td} border-l font-semibold`}>{formatPercentual(r.atingimento)}</td>
-      <td className="px-2.5 py-1 text-left">
-        <StatusMetaBadge status={r.status} />
-      </td>
-      <td className={`${td} border-l`}>
-        <Sinal value={r.diferenca}>{formatMoeda(r.diferenca)}</Sinal>
-      </td>
-      <td className={td}>
-        <Sinal value={r.diferenca}>{formatPercentual(r.meta && r.diferenca != null ? (r.diferenca / r.meta) * 100 : null)}</Sinal>
-      </td>
-      <td className={`${td} border-l`}>{formatMoeda(r.projecao)}</td>
-      <td className={td}>
-        {r.projecaoSobreMeta == null ? (
-          <span className="text-muted-foreground">—</span>
+const pctDiferenca = (r: ResumoMeta) => (r.meta && r.diferenca != null ? (r.diferenca / r.meta) * 100 : null);
+
+function colunasAcompanhamento(rotuloNivel: string, metaDoPeriodo: string): Coluna<LinhaAcompanhamento>[] {
+  return [
+    { id: "nome", titulo: rotuloNivel, subtitulo: "Nome", align: "left", cell: (l) => l.descricao, ordenar: (l) => l.descricao },
+    {
+      id: "meta",
+      titulo: `Meta ${metaDoPeriodo}`,
+      subtitulo: "Valor",
+      divisor: true,
+      cell: (l) => (l.resumo.meta != null ? formatMoeda(l.resumo.meta) : SEM_VALOR),
+      ordenar: (l) => l.resumo.meta,
+    },
+    { id: "realizado", titulo: "Realizado", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.resumo.realizado), ordenar: (l) => l.resumo.realizado },
+    {
+      id: "var-realizado",
+      titulo: "Realizado",
+      subtitulo: "Var. %",
+      cell: (l) => <Delta value={l.variacaoVenda} unidade="%" maiorMelhor />,
+      ordenar: (l) => l.variacaoVenda,
+    },
+    {
+      id: "atingimento",
+      titulo: "Atingimento",
+      subtitulo: "%",
+      divisor: true,
+      cell: (l) => <span className="font-semibold">{formatPercentual(l.resumo.atingimento)}</span>,
+      ordenar: (l) => l.resumo.atingimento,
+    },
+    {
+      id: "status",
+      titulo: "Atingimento",
+      subtitulo: "Situação",
+      align: "left",
+      cell: (l) => <StatusMetaBadge status={l.resumo.status} />,
+      ordenar: (l) => ORDEM_STATUS[l.resumo.status],
+    },
+    {
+      id: "diferenca",
+      titulo: "Diferença",
+      subtitulo: "Valor",
+      divisor: true,
+      cell: (l) => <Sinal value={l.resumo.diferenca}>{formatMoeda(l.resumo.diferenca)}</Sinal>,
+      ordenar: (l) => l.resumo.diferenca,
+    },
+    {
+      id: "diferenca-pct",
+      titulo: "Diferença",
+      subtitulo: "%",
+      cell: (l) => <Sinal value={l.resumo.diferenca}>{formatPercentual(pctDiferenca(l.resumo))}</Sinal>,
+      ordenar: (l) => pctDiferenca(l.resumo),
+    },
+    { id: "projecao", titulo: "Projeção de Fechamento", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.resumo.projecao), ordenar: (l) => l.resumo.projecao },
+    {
+      id: "projecao-meta",
+      titulo: "Projeção de Fechamento",
+      subtitulo: "% meta",
+      cell: (l) =>
+        l.resumo.projecaoSobreMeta == null ? (
+          SEM_VALOR
         ) : (
-          <Sinal value={r.projecaoSobreMeta - 100}>{formatPercentual(r.projecaoSobreMeta)}</Sinal>
-        )}
-      </td>
-      <td className={`${td} border-l`}>{formatPercentual(r.metaMargem)}</td>
-      <td className={`${td} border-l`}>{formatPercentual(r.margem)}</td>
-      <td className="border-l px-2.5 py-1 text-left">
-        <StatusMargemBadge status={r.statusMargem} />
-      </td>
-    </>
-  );
+          <Sinal value={l.resumo.projecaoSobreMeta - 100}>{formatPercentual(l.resumo.projecaoSobreMeta)}</Sinal>
+        ),
+      ordenar: (l) => l.resumo.projecaoSobreMeta,
+    },
+    { id: "meta-margem", titulo: "Meta de Margem", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.resumo.metaMargem), ordenar: (l) => l.resumo.metaMargem },
+    { id: "margem", titulo: "Margem Atual", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.resumo.margem), ordenar: (l) => l.resumo.margem },
+    {
+      id: "status-margem",
+      titulo: "Situação Margem",
+      subtitulo: <SituacaoPontos itens={PONTOS_MARGEM} />,
+      rotulo: "Situação da margem",
+      align: "left",
+      divisor: true,
+      cell: (l) => <StatusMargemBadge status={l.resumo.statusMargem} />,
+      ordenar: (l) => ORDEM_MARGEM[l.resumo.statusMargem],
+    },
+  ];
 }
 
 /**
@@ -142,59 +186,6 @@ export function AcompanhamentoTable({
     });
 
   const rotuloNivel = NIVEIS.find((n) => n.value === nivel)!.label;
-
-  function linhas(profundidade: number, lista: LinhaAcompanhamento[]): React.ReactNode {
-    const nivelLinha = niveis[profundidade];
-    const temFilhos = profundidade < niveis.length - 1;
-    return lista.map((l) => {
-      const chave = `${nivelLinha}:${l.codigo}`;
-      const aberto = abertos.has(chave);
-      const filhos = aberto ? linhasPorNivel[profundidade + 1].filter((f) => f.pai === l.codigo) : [];
-      const filhosCarregando = aberto && carregando(consultas[profundidade + 1]);
-      return (
-        <Fragment key={chave}>
-          <tr className={`border-t hover:bg-secondary/50 ${profundidade ? "bg-secondary/25" : ""}`}>
-            <td className="py-1 pr-2.5 font-medium" style={{ paddingLeft: `${0.5 + profundidade * 1.1}rem` }}>
-              <span className="flex items-center gap-1">
-                {temFilhos ? (
-                  <button
-                    type="button"
-                    onClick={() => alternar(chave)}
-                    aria-expanded={aberto}
-                    aria-label={`${aberto ? "Recolher" : "Expandir"} ${l.descricao}`}
-                    className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-                  >
-                    <Icon path={mdiChevronRight} size={0.7} className={`transition-transform ${aberto ? "rotate-90" : ""}`} />
-                  </button>
-                ) : (
-                  <span className="w-5 shrink-0" />
-                )}
-                <span className={profundidade ? "font-normal" : ""}>{l.descricao}</span>
-              </span>
-            </td>
-            <Celulas l={l} />
-          </tr>
-          {filhosCarregando && (
-            <tr className="border-t">
-              <td colSpan={13} className="py-1.5 text-muted-foreground" style={{ paddingLeft: `${2 + profundidade * 1.1}rem` }}>
-                <span className="inline-flex items-center gap-2 text-xs">
-                  <Spinner className="size-3.5" /> Carregando…
-                </span>
-              </td>
-            </tr>
-          )}
-          {!filhosCarregando && aberto && !filhos.length && (
-            <tr className="border-t">
-              <td colSpan={13} className="py-1.5 text-xs text-muted-foreground" style={{ paddingLeft: `${2 + profundidade * 1.1}rem` }}>
-                Sem meta nem venda no nível de baixo.
-              </td>
-            </tr>
-          )}
-          {!filhosCarregando && linhas(profundidade + 1, filhos)}
-        </Fragment>
-      );
-    });
-  }
 
   const exportar = () => {
     const csv: (string | number | null)[][] = [];
@@ -281,53 +272,24 @@ export function AcompanhamentoTable({
           <p className="py-10 text-center text-sm text-error">{base.error.message}</p>
         ) : (
           <div className="min-h-0 flex-1 overflow-auto rounded-xl border">
-            {/* Sem quebra de linha: a tabela cresce até o conteúdo e o container rola na horizontal. */}
-            <table className="w-full border-collapse whitespace-nowrap text-[13px]">
-              <thead className="sticky top-0 z-10 bg-secondary text-xs text-muted-foreground">
-                <tr>
-                  <th rowSpan={2} className={`${th} text-left`}>
-                    {rotuloNivel}
-                  </th>
-                  <th className={`${th} border-l`}>Meta {DO_PERIODO[aba.id]}</th>
-                  <th colSpan={2} className={`${th} border-l`}>Realizado</th>
-                  <th colSpan={2} className={`${th} border-l`}>Atingimento</th>
-                  <th colSpan={2} className={`${th} border-l`}>Diferença</th>
-                  <th colSpan={2} className={`${th} border-l`}>Projeção de Fechamento</th>
-                  <th className={`${th} border-l`}>Meta de Margem</th>
-                  <th className={`${th} border-l`}>Margem Atual</th>
-                  <th rowSpan={2} className={`${th} border-l`}>Situação Margem</th>
-                </tr>
-                <tr>
-                  <th className={`${th} border-l text-right`}>Valor</th>
-                  <th className={`${th} border-l text-right`}>Valor</th>
-                  <th className={`${th} text-right`}>Var. %</th>
-                  <th className={`${th} border-l text-right`}>%</th>
-                  <th className={`${th} text-left`}>Situação</th>
-                  <th className={`${th} border-l text-right`}>Valor</th>
-                  <th className={`${th} text-right`}>%</th>
-                  <th className={`${th} border-l text-right`}>Valor</th>
-                  <th className={`${th} text-right`}>% meta</th>
-                  <th className={`${th} border-l text-right`}>%</th>
-                  <th className={`${th} border-l text-right`}>%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {linhas(0, raiz)}
-                {!raiz.length && (
-                  <tr>
-                    <td colSpan={13} className="py-8 text-center text-muted-foreground">
-                      Nenhum resultado.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-              <tfoot className="sticky bottom-0 bg-card font-semibold">
-                <tr className="border-t-2">
-                  <td className="px-2.5 py-1.5">Total</td>
-                  <Celulas l={total} />
-                </tr>
-              </tfoot>
-            </table>
+            <DataTable
+              colunas={colunasAcompanhamento(rotuloNivel, DO_PERIODO[aba.id])}
+              linhas={raiz}
+              chave={(l, p) => `${niveis[p]}:${l.codigo}`}
+              total={total}
+              rotuloTotal="Total"
+              arvore={{
+                abertas: abertos,
+                alternar,
+                expansivel: (p) => p < niveis.length - 1,
+                filhos: (l, p) => ({
+                  linhas: linhasPorNivel[p + 1].filter((f) => f.pai === l.codigo),
+                  carregando: carregando(consultas[p + 1]),
+                }),
+                rotuloVazio: "Sem meta nem venda no nível de baixo.",
+                descricao: (l) => l.descricao,
+              }}
+            />
           </div>
         )}
         {/* z-20: acima do cabeçalho fixo (sticky) da tabela. */}
