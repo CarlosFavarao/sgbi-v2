@@ -1,5 +1,6 @@
+import { InfoTooltip } from "@/components/ui/tooltip";
 import Icon from "@mdi/react";
-import { mdiArrowDownBold, mdiArrowUpBold, mdiInformationOutline, mdiMinus } from "@mdi/js";
+import { mdiArrowDownBold, mdiArrowUpBold, mdiMinus } from "@mdi/js";
 import type { ReactNode } from "react";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { formatPontos, formatVariacao } from "@/lib/format";
@@ -81,9 +82,7 @@ export function KpiCard({
         <h3 className="min-w-0 truncate text-[13px] font-semibold" title={titulo}>
           {titulo}
         </h3>
-        <span title={ajuda} className="shrink-0 cursor-help text-muted-foreground" aria-label={ajuda}>
-          <Icon path={mdiInformationOutline} size={0.6} />
-        </span>
+        <InfoTooltip texto={ajuda} />
         {badge && (
           <span className="ml-auto rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
             {badge}

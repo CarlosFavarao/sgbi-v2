@@ -196,10 +196,13 @@ export function DateRangePicker<Id extends string>({
                 referencia: { from: isoParaDate(referencia.intervalo.inicio), to: isoParaDate(referencia.intervalo.fim) },
               }),
               ...(previa && { previa }),
+              // Primeiro clique: o intervalo ainda não existe, então o calendário não destaca o dia sozinho.
+              ...(ancora && { ancora }),
             }}
             modifiersClassNames={{
               referencia: "bg-summary-orange-bg [&>button]:font-semibold [&>button]:text-warning [&>button]:hover:bg-warning/20",
               previa: "bg-primary/10",
+              ancora: `rounded-md bg-primary/15 [&>button]:bg-primary [&>button]:text-primary-foreground! ${HOVER_PONTA}`,
             }}
             components={{
               Chevron: ({ orientation }) => (

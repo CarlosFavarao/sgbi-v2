@@ -1,6 +1,9 @@
 "use client";
 
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { propsEixoX, propsEixoY, propsGrade } from "@/components/charts/estilo";
+import { ExpandirGrafico } from "@/components/charts/expandir-grafico";
+import { LegendaGrafico, type ItemLegenda } from "@/components/charts/legenda-grafico";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { formatDecimal, formatMesAno, formatMoeda, formatMoedaCompacta } from "@/lib/format";
@@ -24,6 +27,82 @@ export function SaldoContasCard() {
   );
 }
 
+function MensalPlot({
+  pontos,
+  detalhado,
+}: {
+  pontos: PontoMensal[];
+  /** Gráfico da janela ampliada: eixos e marcações mais detalhados. */
+  detalhado: boolean;
+}) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={pontos} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
+        <CartesianGrid {...propsGrade(detalhado)} />
+        <XAxis
+          dataKey="mes"
+          tickFormatter={(m: string) => (detalhado ? formatMesAno(m) : formatMesAno(m).replace("/20", "/"))}
+          {...propsEixoX(detalhado)}
+        />
+        <YAxis tickFormatter={formatMoedaCompacta} {...propsEixoY(detalhado)} width={detalhado ? 92 : 76} />
+        <Tooltip
+          cursor={{ fill: "var(--muted)", opacity: 0.35 }}
+          content={({ active, payload }) => {
+            const p = payload?.[0]?.payload as PontoMensal | undefined;
+            if (!active || !p) return null;
+            return (
+              <div className="min-w-44 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-lg">
+                <div className="mb-1 font-semibold">{formatMesAno(p.mes)}</div>
+                {(
+                  [
+                    ["Entradas", p.entradas, "text-success"],
+                    ["Saídas", p.saidas, "text-error"],
+                    ["Resultado", p.resultado, p.resultado >= 0 ? "text-success" : "text-error"],
+                  ] as const
+                ).map(([nome, v, cor]) => (
+                  <div key={nome} className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">{nome}</span>
+                    <span className={`font-semibold tabular-nums ${cor}`}>{formatMoeda(v)}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          }}
+        />
+        <Bar
+          dataKey="entradas"
+          fill="var(--success)"
+          radius={[3, 3, 0, 0]}
+          maxBarSize={detalhado ? 30 : 16}
+          isAnimationActive={false}
+        />
+        <Bar
+          dataKey="saidas"
+          fill="var(--error)"
+          radius={[3, 3, 0, 0]}
+          maxBarSize={detalhado ? 30 : 16}
+          isAnimationActive={false}
+        />
+        <Line
+          dataKey="resultado"
+          stroke="var(--chart-1)"
+          strokeWidth={2}
+          dot={{ r: detalhado ? 4 : 2.5 }}
+          isAnimationActive={false}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
+const TITULO_MENSAL = "Evolução das Entradas e Saídas · 12 meses";
+
+const LEGENDA_MENSAL: ItemLegenda[] = [
+  { nome: "Entradas", cor: "var(--success)" },
+  { nome: "Saídas", cor: "var(--error)" },
+  { nome: "Resultado", cor: "var(--chart-1)", forma: "linha" },
+];
+
 /** Entradas, saídas e resultado por mês (12 meses até o mês de referência). */
 export function EvolucaoMensalChart({ pontos, carregando }: { pontos: PontoMensal[]; carregando: boolean }) {
   const temDados = pontos.some((p) => p.entradas || p.saidas);
@@ -31,22 +110,17 @@ export function EvolucaoMensalChart({ pontos, carregando }: { pontos: PontoMensa
     <Card className="min-w-0">
       <CardHeader>
         <div className="min-w-0">
-          <CardTitle className="text-sm">Evolução das Entradas e Saídas · 12 meses</CardTitle>
-          <ul className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-            <li className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-success" />
-              Entradas
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-error" />
-              Saídas
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span className="h-0.5 w-3.5 rounded-full bg-chart-1" />
-              Resultado
-            </li>
-          </ul>
+          <CardTitle className="text-sm">{TITULO_MENSAL}</CardTitle>
+          <LegendaGrafico itens={LEGENDA_MENSAL} />
         </div>
+        <ExpandirGrafico
+          titulo={TITULO_MENSAL}
+          descricao="Entradas, saídas e resultado de cada um dos 12 meses até o mês de referência."
+          legenda={<LegendaGrafico itens={LEGENDA_MENSAL} grande />}
+          desabilitado={!temDados}
+        >
+          <MensalPlot pontos={pontos} detalhado />
+        </ExpandirGrafico>
       </CardHeader>
       <div className="relative h-36 px-1 pb-2 pt-1" aria-busy={carregando}>
         {!temDados ? (
@@ -54,70 +128,7 @@ export function EvolucaoMensalChart({ pontos, carregando }: { pontos: PontoMensa
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem movimento</div>
           )
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={pontos} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
-              <CartesianGrid vertical={false} stroke="var(--border)" />
-              <XAxis
-                dataKey="mes"
-                tickFormatter={(m: string) => formatMesAno(m).replace("/20", "/")}
-                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                tickLine={false}
-                axisLine={{ stroke: "var(--border)" }}
-              />
-              <YAxis
-                tickFormatter={formatMoedaCompacta}
-                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                width={76}
-              />
-              <Tooltip
-                cursor={{ fill: "var(--muted)", opacity: 0.35 }}
-                content={({ active, payload }) => {
-                  const p = payload?.[0]?.payload as PontoMensal | undefined;
-                  if (!active || !p) return null;
-                  return (
-                    <div className="min-w-44 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-lg">
-                      <div className="mb-1 font-semibold">{formatMesAno(p.mes)}</div>
-                      {(
-                        [
-                          ["Entradas", p.entradas, "text-success"],
-                          ["Saídas", p.saidas, "text-error"],
-                          ["Resultado", p.resultado, p.resultado >= 0 ? "text-success" : "text-error"],
-                        ] as const
-                      ).map(([nome, v, cor]) => (
-                        <div key={nome} className="flex justify-between gap-4">
-                          <span className="text-muted-foreground">{nome}</span>
-                          <span className={`font-semibold tabular-nums ${cor}`}>{formatMoeda(v)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                }}
-              />
-              <Bar
-                dataKey="entradas"
-                fill="var(--success)"
-                radius={[3, 3, 0, 0]}
-                maxBarSize={16}
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="saidas"
-                fill="var(--error)"
-                radius={[3, 3, 0, 0]}
-                maxBarSize={16}
-                isAnimationActive={false}
-              />
-              <Line
-                dataKey="resultado"
-                stroke="var(--chart-1)"
-                strokeWidth={2}
-                dot={{ r: 2.5 }}
-                isAnimationActive={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <MensalPlot pontos={pontos} detalhado={false} />
         )}
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
       </div>

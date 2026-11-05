@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ExpandirGrafico } from "@/components/charts/expandir-grafico";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Select } from "@/components/ui/select";
@@ -16,6 +17,56 @@ const MEDIDAS: { value: Medida; label: string }[] = [
 ];
 
 const valorDe = (l: LinhaVendaNivel, medida: Medida) => (medida === "venda" ? l.venda : l.venda - l.custo);
+
+type ItemBarra = { codigo: number; descricao: string; valor: number };
+
+function ListaDepartamentos({
+  itens,
+  total,
+  detalhado = false,
+}: {
+  itens: ItemBarra[];
+  total: number;
+  /** Janela ampliada: todos os departamentos, em linhas maiores. */
+  detalhado?: boolean;
+}) {
+  const maior = Math.max(...itens.map((i) => Math.abs(i.valor)), 1);
+  return (
+    <ul className={detalhado ? "flex flex-col gap-2" : "flex h-full flex-col justify-between"}>
+      {itens.map((item, i) => (
+        <li
+          key={item.codigo}
+          className={`grid items-center gap-2 ${
+            detalhado
+              ? "grid-cols-[minmax(8rem,16rem)_1fr_9rem_4.5rem] text-sm"
+              : "grid-cols-[minmax(5.5rem,8rem)_1fr_6.75rem_3.75rem] text-xs"
+          }`}
+        >
+          <span className="truncate font-medium" title={item.descricao}>
+            {item.descricao}
+          </span>
+          <span className={`${detalhado ? "h-4" : "h-3"} overflow-hidden rounded-sm bg-secondary`}>
+            <span
+              className="block h-full rounded-sm"
+              style={{
+                width: `${(Math.max(item.valor, 0) / maior) * 100}%`,
+                background: "var(--chart-1)",
+                // Os primeiros mais fortes, como no BI antigo.
+                opacity: item.codigo === -1 ? 0.35 : Math.max(1 - i * 0.07, detalhado ? 0.4 : 0),
+              }}
+            />
+          </span>
+          <span className="whitespace-nowrap text-right tabular-nums text-muted-foreground">
+            {formatMoeda(item.valor)}
+          </span>
+          <span className="text-right tabular-nums text-muted-foreground">
+            {formatPercentual(total ? (item.valor / total) * 100 : null)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /**
  * Lista com barras horizontais (ranking): nome, barra proporcional ao maior,
@@ -44,19 +95,28 @@ export function DepartamentosBarras({
         ]
       : ordenadas;
   const total = ordenadas.reduce((t, l) => t + l.valor, 0);
-  const maior = Math.max(...itens.map((i) => Math.abs(i.valor)), 1);
 
   return (
     <Card className="min-w-0">
       <CardHeader>
         <CardTitle>Vendas por Departamento</CardTitle>
-        <Select
-          aria-label="Medida do gráfico de departamentos"
-          className="w-40"
-          value={medida}
-          options={MEDIDAS}
-          onValueChange={setMedida}
-        />
+        <div className="flex items-center gap-1.5">
+          <Select
+            aria-label="Medida do gráfico de departamentos"
+            className="w-40"
+            value={medida}
+            options={MEDIDAS}
+            onValueChange={setMedida}
+          />
+          <ExpandirGrafico
+            titulo="Vendas por Departamento"
+            descricao={`${MEDIDAS.find((m) => m.value === medida)!.label} de todos os departamentos, com a participação no total.`}
+            desabilitado={!ordenadas.length}
+            rolavel
+          >
+            <ListaDepartamentos itens={ordenadas} total={total} detalhado />
+          </ExpandirGrafico>
+        </div>
       </CardHeader>
 
       <div className="relative h-36 px-4 pb-2 pt-1.5" aria-busy={carregando}>
@@ -67,35 +127,7 @@ export function DepartamentosBarras({
             </div>
           )
         ) : (
-          <ul className="flex h-full flex-col justify-between">
-            {itens.map((item, i) => (
-              <li
-                key={item.codigo}
-                className="grid grid-cols-[minmax(5.5rem,8rem)_1fr_auto_3.75rem] items-center gap-2 text-xs"
-              >
-                <span className="truncate font-medium" title={item.descricao}>
-                  {item.descricao}
-                </span>
-                <span className="h-3 overflow-hidden rounded-sm bg-secondary">
-                  <span
-                    className="block h-full rounded-sm"
-                    style={{
-                      width: `${(Math.max(item.valor, 0) / maior) * 100}%`,
-                      background: "var(--chart-1)",
-                      // Os primeiros mais fortes, como no BI antigo.
-                      opacity: item.codigo === -1 ? 0.35 : 1 - i * 0.07,
-                    }}
-                  />
-                </span>
-                <span className="whitespace-nowrap text-right tabular-nums text-muted-foreground">
-                  {formatMoeda(item.valor)}
-                </span>
-                <span className="text-right tabular-nums text-muted-foreground">
-                  {formatPercentual(total ? (item.valor / total) * 100 : null)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <ListaDepartamentos itens={itens} total={total} />
         )}
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
       </div>
