@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AppShell } from "@/components/app-shell";
-import { DfcPendente } from "@/features/financeiro/components/dfc-pendente";
+import { Dfc } from "@/features/financeiro/components/dfc";
 
 export const metadata: Metadata = { title: "DFC · Financeiro · SGBI" };
 
@@ -8,7 +9,10 @@ export default function DfcPage() {
   return (
     <AppShell>
       <main className="flex-1 p-3">
-        <DfcPendente />
+        {/* TanStack Query reads the current time; Suspense keeps it out of the prerender. */}
+        <Suspense>
+          <Dfc />
+        </Suspense>
       </main>
     </AppShell>
   );
