@@ -99,18 +99,21 @@ export function AtingimentoDepartamentos({
               Esperado: {formatPercentual(esperado)}
             </span>
           )}
-          <ExpandirGrafico
-            titulo={titulo}
-            descricao="Realizado ÷ meta do período de todos os departamentos; a linha tracejada marca o esperado até a referência."
-            desabilitado={!todas.length}
-            rolavel
-          >
-            <ListaAtingimento linhas={todas} esperado={esperado} detalhado />
-          </ExpandirGrafico>
+          
         </div>
       </CardHeader>
 
-      <div className="relative h-32 px-4 pb-2 pt-1.5" aria-busy={carregando}>
+      <ExpandirGrafico
+        className="relative h-32 px-4 pb-2 pt-1.5"
+        ocupado={carregando}
+        titulo={titulo}
+            descricao="Realizado ÷ meta do período de todos os departamentos; a linha tracejada marca o esperado até a referência."
+            desabilitado={!todas.length || carregando}
+            rolavel
+        detalhe={
+<ListaAtingimento linhas={todas} esperado={esperado} detalhado />
+        }
+      >
         {!comMeta.length ? (
           !carregando && (
             <div className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
@@ -121,7 +124,7 @@ export function AtingimentoDepartamentos({
           <ListaAtingimento linhas={comMeta} esperado={esperado} />
         )}
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
-      </div>
+      </ExpandirGrafico>
     </Card>
   );
 }

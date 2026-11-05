@@ -90,9 +90,9 @@ function SerieDetalhada({
 }
 
 /**
- * Minigráfico diário do card de KPI, com tooltip por dia. O ícone no canto
- * abre a série numa janela, com eixos de datas e valores (no minigráfico não
- * dá para ler os eixos).
+ * Minigráfico diário do card de KPI, com tooltip por dia. Clicar nele abre a
+ * série numa janela, com eixos de datas e valores (no minigráfico não dá para
+ * ler os eixos).
  */
 export function Sparkline({
   data,
@@ -114,7 +114,13 @@ export function Sparkline({
   const eixo = formatEixo ?? (format === formatMoeda ? formatMoedaCompacta : format);
 
   return (
-    <div className="relative h-9 w-12 shrink-0 @[14rem]:w-14 @[16rem]:w-20">
+    <ExpandirGrafico
+      className="h-9 w-12 shrink-0 @[14rem]:w-14 @[16rem]:w-20"
+      titulo={label}
+      descricao="Evolução diária no período."
+      legenda={<LegendaGrafico grande itens={[{ nome: label, cor: color, forma: kind === "bar" ? "quadrado" : "linha" }]} />}
+      detalhe={<SerieDetalhada data={data} kind={kind} color={color} format={format} formatEixo={eixo} />}
+    >
       <div className="size-full" role="img" aria-label={`${label}: evolução diária`}>
         <ResponsiveContainer width="100%" height="100%">
           {kind === "bar" ? (
@@ -141,15 +147,6 @@ export function Sparkline({
           )}
         </ResponsiveContainer>
       </div>
-      <ExpandirGrafico
-        compacto
-        className="absolute -right-1 -top-3 bg-card/80"
-        titulo={label}
-        descricao="Evolução diária no período."
-        legenda={<LegendaGrafico grande itens={[{ nome: label, cor: color, forma: kind === "bar" ? "quadrado" : "linha" }]} />}
-      >
-        <SerieDetalhada data={data} kind={kind} color={color} format={format} formatEixo={eixo} />
-      </ExpandirGrafico>
-    </div>
+    </ExpandirGrafico>
   );
 }

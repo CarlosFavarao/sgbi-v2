@@ -113,16 +113,19 @@ export function EvolucaoMensalChart({ pontos, carregando }: { pontos: PontoMensa
           <CardTitle className="text-sm">{TITULO_MENSAL}</CardTitle>
           <LegendaGrafico itens={LEGENDA_MENSAL} />
         </div>
-        <ExpandirGrafico
-          titulo={TITULO_MENSAL}
+        
+      </CardHeader>
+      <ExpandirGrafico
+        className="relative h-36 px-1 pb-2 pt-1"
+        ocupado={carregando}
+        titulo={TITULO_MENSAL}
           descricao="Entradas, saídas e resultado de cada um dos 12 meses até o mês de referência."
           legenda={<LegendaGrafico itens={LEGENDA_MENSAL} grande />}
-          desabilitado={!temDados}
-        >
-          <MensalPlot pontos={pontos} detalhado />
-        </ExpandirGrafico>
-      </CardHeader>
-      <div className="relative h-36 px-1 pb-2 pt-1" aria-busy={carregando}>
+          desabilitado={!temDados || carregando}
+        detalhe={
+<MensalPlot pontos={pontos} detalhado />
+        }
+      >
         {!temDados ? (
           !carregando && (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem movimento</div>
@@ -131,7 +134,7 @@ export function EvolucaoMensalChart({ pontos, carregando }: { pontos: PontoMensa
           <MensalPlot pontos={pontos} detalhado={false} />
         )}
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
-      </div>
+      </ExpandirGrafico>
     </Card>
   );
 }

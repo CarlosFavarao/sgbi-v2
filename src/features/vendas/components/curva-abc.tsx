@@ -119,6 +119,10 @@ export function CurvaAbc({ abc, carregando }: { abc: Record<CriterioAbc, Curva> 
     cor: CLASSES[c.classe].cor,
   }));
 
+  const seletor = (
+    <Segmented label="Critério da curva ABC" value={criterio} options={CRITERIOS} onChange={setCriterio} />
+  );
+
   return (
     <Card className="h-full min-w-0 overflow-hidden">
       <CardHeader>
@@ -129,18 +133,7 @@ export function CurvaAbc({ abc, carregando }: { abc: Record<CriterioAbc, Curva> 
             texto={`Produtos ordenados do maior para o menor ${criterio === "faturamento" ? "faturamento" : "lucro bruto"}: classe A até ${A}% acumulado, B até ${A + B}% e C o restante.`}
           />
         </CardTitle>
-        <div className="flex items-center gap-1.5">
-          <Segmented label="Critério da curva ABC" value={criterio} options={CRITERIOS} onChange={setCriterio} />
-          {curva && curva.totalProdutos > 0 && (
-            <ExpandirGrafico
-              titulo={titulo}
-              descricao={`% acumulado ${base} conforme cresce a fatia de produtos, do maior para o menor.`}
-              legenda={<LegendaGrafico itens={legenda} grande />}
-            >
-              <CurvaPlot curva={curva} base={base} detalhado />
-            </ExpandirGrafico>
-          )}
-        </div>
+        {seletor}
       </CardHeader>
 
       {/* Card largo e baixo: classes empilhadas à esquerda e a curva à direita. */}
@@ -180,7 +173,15 @@ export function CurvaAbc({ abc, carregando }: { abc: Record<CriterioAbc, Curva> 
           ))}
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-col">
+        <ExpandirGrafico
+          className="flex min-h-0 min-w-0 flex-col"
+          titulo={titulo}
+          descricao={`% acumulado ${base} conforme cresce a fatia de produtos, do maior para o menor.`}
+          legenda={<LegendaGrafico itens={legenda} grande />}
+          filtros={seletor}
+          desabilitado={!curva || curva.totalProdutos === 0 || carregando}
+          detalhe={curva && <CurvaPlot curva={curva} base={base} detalhado />}
+        >
           {/* As cores das faixas são as dos cards A/B/C ao lado (sem legenda repetida). */}
           <div className="text-xs font-semibold">{titulo}</div>
           <div className="min-h-0 flex-1" role="img" aria-label={`Curva ABC por ${criterio}`}>
@@ -194,7 +195,7 @@ export function CurvaAbc({ abc, carregando }: { abc: Record<CriterioAbc, Curva> 
               )
             )}
           </div>
-        </div>
+        </ExpandirGrafico>
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
       </div>
     </Card>

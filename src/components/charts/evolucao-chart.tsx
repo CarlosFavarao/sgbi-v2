@@ -157,6 +157,15 @@ export function EvolucaoChart({
     { nome: nomeAtual, cor, forma: "circulo" },
     { nome: "Período anterior", cor, opacidade: 0.3 },
   ];
+  const seletor = (
+    <Select
+      aria-label={`Agrupamento de ${titulo}`}
+      className="w-32"
+      value={granularidade}
+      options={GRANULARIDADES}
+      onValueChange={setGranularidade}
+    />
+  );
   const plot = { dados, granularidade, nomeAtual, cor, formatValor, formatEixo, larguraEixo, eixoDesdeZero };
 
   return (
@@ -166,26 +175,19 @@ export function EvolucaoChart({
           <CardTitle>{titulo}</CardTitle>
           <LegendaGrafico itens={legenda} />
         </div>
-        <div className="flex items-center gap-1.5">
-          <Select
-            aria-label={`Agrupamento de ${titulo}`}
-            className="w-32"
-            value={granularidade}
-            options={GRANULARIDADES}
-            onValueChange={setGranularidade}
-          />
-          <ExpandirGrafico
-            titulo={titulo}
-            descricao={`${nomeAtual} contra o período anterior, em agrupamento ${GRANULARIDADES.find((g) => g.value === granularidade)!.label.toLowerCase()}.`}
-            legenda={<LegendaGrafico itens={legenda} grande />}
-            desabilitado={!temDados}
-          >
-            <EvolucaoPlot {...plot} detalhado />
-          </ExpandirGrafico>
-        </div>
+        {seletor}
       </CardHeader>
 
-      <div className={`relative ${alturaGrafico} px-1 pb-2 pt-1`} aria-busy={carregando}>
+      <ExpandirGrafico
+        className={`relative ${alturaGrafico} px-1 pb-2 pt-1`}
+        ocupado={carregando}
+        titulo={titulo}
+        descricao={`${nomeAtual} contra o período anterior, em agrupamento ${GRANULARIDADES.find((g) => g.value === granularidade)!.label.toLowerCase()}.`}
+        legenda={<LegendaGrafico itens={legenda} grande />}
+        filtros={seletor}
+        desabilitado={!temDados || carregando}
+        detalhe={<EvolucaoPlot {...plot} detalhado />}
+      >
         {carregando && !temDados ? (
           <div className="h-full" />
         ) : !temDados ? (
@@ -196,7 +198,7 @@ export function EvolucaoChart({
           <EvolucaoPlot {...plot} detalhado={false} />
         )}
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
-      </div>
+      </ExpandirGrafico>
     </Card>
   );
 }

@@ -180,17 +180,17 @@ export function EvolucaoCaixaChart({
           <CardTitle>{titulo}</CardTitle>
           <LegendaGrafico itens={LEGENDA} />
         </div>
-        <ExpandirGrafico
-          titulo={titulo}
-          descricao="Entradas (para cima) e saídas (para baixo) por dia, com o resultado acumulado; barras claras são previstas."
-          legenda={<LegendaGrafico itens={LEGENDA} grande />}
-          desabilitado={!temDados}
-        >
-          <CaixaPlot dados={dados} referencia={referencia} detalhado />
-        </ExpandirGrafico>
+        
       </CardHeader>
 
-      <div className="relative h-36 px-1 pb-2 pt-1" aria-busy={carregando}>
+      <ExpandirGrafico
+        className="relative h-36 px-1 pb-2 pt-1"
+        ocupado={carregando}
+        titulo={titulo}
+          descricao="Entradas (para cima) e saídas (para baixo) por dia, com o resultado acumulado; barras claras são previstas."
+          legenda={<LegendaGrafico itens={LEGENDA} grande />} desabilitado={!temDados || carregando}
+        detalhe={<CaixaPlot dados={dados} referencia={referencia} detalhado />}
+      >
         {!temDados ? (
           !carregando && (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -201,7 +201,7 @@ export function EvolucaoCaixaChart({
           <CaixaPlot dados={dados} referencia={referencia} detalhado={false} />
         )}
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
-      </div>
+      </ExpandirGrafico>
     </Card>
   );
 }

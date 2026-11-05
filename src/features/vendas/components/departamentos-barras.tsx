@@ -96,30 +96,33 @@ export function DepartamentosBarras({
       : ordenadas;
   const total = ordenadas.reduce((t, l) => t + l.valor, 0);
 
+  const seletor = (
+    <Select
+      aria-label="Medida do gráfico de departamentos"
+      className="w-40"
+      value={medida}
+      options={MEDIDAS}
+      onValueChange={setMedida}
+    />
+  );
+
   return (
     <Card className="min-w-0">
       <CardHeader>
         <CardTitle>Vendas por Departamento</CardTitle>
-        <div className="flex items-center gap-1.5">
-          <Select
-            aria-label="Medida do gráfico de departamentos"
-            className="w-40"
-            value={medida}
-            options={MEDIDAS}
-            onValueChange={setMedida}
-          />
-          <ExpandirGrafico
-            titulo="Vendas por Departamento"
-            descricao={`${MEDIDAS.find((m) => m.value === medida)!.label} de todos os departamentos, com a participação no total.`}
-            desabilitado={!ordenadas.length}
-            rolavel
-          >
-            <ListaDepartamentos itens={ordenadas} total={total} detalhado />
-          </ExpandirGrafico>
-        </div>
+        {seletor}
       </CardHeader>
 
-      <div className="relative h-36 px-4 pb-2 pt-1.5" aria-busy={carregando}>
+      <ExpandirGrafico
+        className="relative h-36 px-4 pb-2 pt-1.5"
+        ocupado={carregando}
+        titulo="Vendas por Departamento"
+        descricao={`${MEDIDAS.find((m) => m.value === medida)!.label} de todos os departamentos, com a participação no total.`}
+        filtros={seletor}
+        desabilitado={!ordenadas.length || carregando}
+        rolavel
+        detalhe={<ListaDepartamentos itens={ordenadas} total={total} detalhado />}
+      >
         {!itens.length ? (
           !carregando && (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -130,7 +133,7 @@ export function DepartamentosBarras({
           <ListaDepartamentos itens={itens} total={total} />
         )}
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
-      </div>
+      </ExpandirGrafico>
     </Card>
   );
 }

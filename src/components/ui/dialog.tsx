@@ -21,9 +21,9 @@ export function DialogContent({
 }) {
   return (
     <Radix.Portal>
-      <Radix.Overlay className="fixed inset-0 z-50 bg-black/40" />
+      <Radix.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-[dialog-overlay-in_160ms_ease-out] data-[state=closed]:animate-[dialog-overlay-out_120ms_ease-in] motion-reduce:animate-none" />
       <Radix.Content
-        className={`fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border bg-card text-card-foreground shadow-xl outline-none ${className}`}
+        className={`fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border bg-card text-card-foreground shadow-xl outline-none data-[state=open]:animate-[dialog-content-in_200ms_cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:animate-[dialog-content-out_120ms_ease-in] motion-reduce:animate-none ${className}`}
         {...props}
       >
         <div className="flex items-start justify-between gap-3 px-4 pb-2 pt-3">

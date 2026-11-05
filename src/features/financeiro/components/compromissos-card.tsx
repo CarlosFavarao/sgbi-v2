@@ -20,7 +20,14 @@ const FILTROS: { value: Filtro; label: string }[] = [
 ];
 
 const COLUNAS: Coluna<Compromisso>[] = [
-  { id: "vencimento", titulo: "Vencimento", align: "left", className: "tabular-nums", cell: (c) => formatData(c.data), ordenar: (c) => c.data },
+  {
+    id: "vencimento",
+    titulo: "Vencimento",
+    align: "left",
+    className: "tabular-nums",
+    cell: (c) => formatData(c.data),
+    ordenar: (c) => c.data,
+  },
   {
     id: "descricao",
     titulo: "Descrição",
@@ -75,13 +82,14 @@ export function CompromissosCard({ compromissos, carregando }: { compromissos: C
   // No card: primeiro os vencidos, depois os próximos vencimentos.
   const destaque = [...lista.filter((c) => c.situacao === "vencido"), ...lista.filter((c) => c.situacao !== "vencido")];
   const n = FINANCEIRO_CONFIG.compromissosNoCard;
+  const seletor = <Segmented label="Tipo de compromisso" value={filtro} options={FILTROS} onChange={setFiltro} />;
 
   return (
     <Card className="h-full min-w-0">
       <CardHeader>
         <CardTitle>Compromissos a Vencer</CardTitle>
         <div className="flex items-center gap-2">
-          <Segmented label="Tipo de compromisso" value={filtro} options={FILTROS} onChange={setFiltro} />
+          {seletor}
           <Dialog>
             <DialogTrigger
               disabled={lista.length <= n}
@@ -95,8 +103,12 @@ export function CompromissosCard({ compromissos, carregando }: { compromissos: C
               descricao="Títulos em aberto (vencidos e a vencer) e cartões a liquidar, por data."
               className="max-w-3xl"
             >
-              <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">
-                <div className="overflow-hidden rounded-lg border">
+              <div className="flex min-h-0 flex-1 flex-col gap-2 px-4 pb-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{lista.length} compromissos</span>
+                  {seletor}
+                </div>
+                <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
                   <Tabela compromissos={lista} />
                 </div>
               </div>

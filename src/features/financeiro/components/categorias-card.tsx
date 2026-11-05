@@ -44,7 +44,9 @@ function Lista({
             <li
               key={c.categoria}
               className={`grid items-center gap-1.5 ${
-                detalhado ? "grid-cols-[minmax(0,1fr)_minmax(5rem,10rem)_7.5rem] text-sm" : "grid-cols-[minmax(0,1fr)_3rem_6.5rem] text-[11px]"
+                detalhado
+                  ? "grid-cols-[minmax(0,1fr)_minmax(5rem,10rem)_7.5rem] text-sm"
+                  : "grid-cols-[minmax(0,1fr)_3rem_6.5rem] text-[11px]"
               }`}
               title={`${c.categoria}: ${formatMoeda(c.valor)} (${formatPercentual(c.participacao)})`}
             >
@@ -77,30 +79,32 @@ export function CategoriasCard({
   carregando: boolean;
 }) {
   const [medida, setMedida] = useState<Medida>("valor");
+  const seletor = <Segmented label="Medida" value={medida} options={MEDIDAS} onChange={setMedida} />;
   return (
     <Card className="min-w-0">
       <CardHeader>
         <CardTitle>Entradas e Saídas por Categoria</CardTitle>
-        <div className="flex items-center gap-1.5">
-          <Segmented label="Medida" value={medida} options={MEDIDAS} onChange={setMedida} />
-          <ExpandirGrafico
-            titulo="Entradas e Saídas por Categoria"
-            descricao="Todas as categorias realizadas no mês."
-            desabilitado={!entradas.categorias.length && !saidas.categorias.length}
-            rolavel
-          >
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <Lista titulo="Entradas" {...entradas} cor="var(--success)" medida={medida} detalhado />
-              <Lista titulo="Saídas" {...saidas} cor="var(--error)" medida={medida} detalhado />
-            </div>
-          </ExpandirGrafico>
-        </div>
+        {seletor}
       </CardHeader>
-      <div className="relative grid h-36 grid-cols-2 gap-3 overflow-hidden px-4 pb-2 pt-1.5" aria-busy={carregando}>
+      <ExpandirGrafico
+        className="relative grid h-36 grid-cols-2 gap-3 overflow-hidden px-4 pb-2 pt-1.5"
+        ocupado={carregando}
+        titulo="Entradas e Saídas por Categoria"
+        descricao="Todas as categorias realizadas no mês."
+        filtros={seletor}
+        desabilitado={(!entradas.categorias.length && !saidas.categorias.length) || carregando}
+        rolavel
+        detalhe={
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Lista titulo="Entradas" {...entradas} cor="var(--success)" medida={medida} detalhado />
+            <Lista titulo="Saídas" {...saidas} cor="var(--error)" medida={medida} detalhado />
+          </div>
+        }
+      >
         <Lista titulo="Entradas" {...entradas} cor="var(--success)" medida={medida} />
         <Lista titulo="Saídas" {...saidas} cor="var(--error)" medida={medida} />
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
-      </div>
+      </ExpandirGrafico>
     </Card>
   );
 }

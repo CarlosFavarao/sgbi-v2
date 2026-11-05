@@ -146,17 +146,17 @@ export function CumprimentoChart({
           <CardTitle>{titulo}</CardTitle>
           <LegendaGrafico itens={legenda} />
         </div>
-        <ExpandirGrafico
-          titulo={titulo}
-          descricao="Venda acumulada do mês, meta acumulada esperada e projeção de fechamento."
-          legenda={<LegendaGrafico itens={legenda} grande />}
-          desabilitado={!temDados}
-        >
-          <CumprimentoPlot pontos={pontos} referencia={referencia} detalhado />
-        </ExpandirGrafico>
+        
       </CardHeader>
 
-      <div className="relative h-32 px-1 pb-2 pt-1" aria-busy={carregando}>
+      <ExpandirGrafico
+        className="relative h-32 px-1 pb-2 pt-1"
+        ocupado={carregando}
+        titulo={titulo}
+          descricao="Venda acumulada do mês, meta acumulada esperada e projeção de fechamento."
+          legenda={<LegendaGrafico itens={legenda} grande />} desabilitado={!temDados || carregando}
+        detalhe={<CumprimentoPlot pontos={pontos} referencia={referencia} detalhado />}
+      >
         {!temDados ? (
           !carregando && (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -167,7 +167,7 @@ export function CumprimentoChart({
           <CumprimentoPlot pontos={pontos} referencia={referencia} detalhado={false} />
         )}
         <LoadingOverlay ativo={carregando} className="rounded-b-2xl" />
-      </div>
+      </ExpandirGrafico>
     </Card>
   );
 }
