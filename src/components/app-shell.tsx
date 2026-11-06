@@ -1,7 +1,7 @@
 "use client";
 
 import Icon from "@mdi/react";
-import { mdiBullseyeArrow, mdiCartOutline, mdiCashMultiple, mdiClose, mdiMenu, mdiMenuOpen, mdiViewDashboardOutline } from "@mdi/js";
+import { mdiBullseyeArrow, mdiCartOutline, mdiCashMultiple, mdiChartWaterfall, mdiClose, mdiMenu, mdiMenuOpen, mdiViewDashboardOutline } from "@mdi/js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -12,7 +12,8 @@ const NAV = [
   { href: "/", label: "Painel Executivo", icon: mdiViewDashboardOutline },
   { href: "/metas", label: "Metas", icon: mdiBullseyeArrow },
   { href: "/vendas", label: "Vendas", icon: mdiCartOutline },
-  { href: "/financeiro", label: "Financeiro", icon: mdiCashMultiple },
+  { href: "/financeiro", label: "Fluxo de Caixa", icon: mdiCashMultiple },
+  { href: "/financeiro/dfc", label: "DFC", icon: mdiChartWaterfall },
 ];
 
 const iconButton =
@@ -23,8 +24,8 @@ function NavLinks({ expanded, onNavigate }: { expanded: boolean; onNavigate?: ()
   return (
     <ul className="flex flex-col gap-1">
       {NAV.map((item) => {
-        // Telas de um módulo (ex.: /financeiro/dfc) mantêm o item do módulo ativo.
-        const active = item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        // Cada tela tem o próprio item: só a rota exata o deixa ativo (/financeiro não acende em /financeiro/dfc).
+        const active = pathname === item.href;
         return (
           <li key={item.href}>
             <Link

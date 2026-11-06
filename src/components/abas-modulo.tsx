@@ -29,7 +29,7 @@ export function AbasModulo({ abas, label }: { abas: AbaModulo[]; label: string }
   );
 }
 
-/** Telas do módulo Financeiro (as outras abas do print estão na pendência P49). */
+/** Telas do módulo Financeiro. Hoje separadas no menu (sem uso); o componente fica para juntá-las de novo em abas (P49). */
 export const ABAS_FINANCEIRO: AbaModulo[] = [
   { href: "/financeiro", label: "Fluxo de Caixa" },
   { href: "/financeiro/dfc", label: "DFC" },

@@ -2,6 +2,8 @@
 
 Registro das decisões já tomadas no SGBI v2 e das perguntas que ainda precisam de resposta. Quando uma pergunta for respondida, preencha a **Resposta** e a data, aplique a mudança e mova o item para a lista de decisões.
 
+Para uma leitura rápida dos pontos que mais pesam (dados que faltam, tratamento de dados e legendas de situação), veja [`decisoes-cruciais.md`](decisoes-cruciais.md).
+
 Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.md`](painel-executivo-poc.md), [`vendas.md`](vendas.md), [`metas.md`](metas.md), [`financeiro.md`](financeiro.md), [`dfc.md`](dfc.md) e [`api-externa-mapeamento.md`](api-externa-mapeamento.md).
 
 ---
@@ -51,7 +53,7 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D24 | **Exportar** gera CSV no formato do Excel em português (";", vírgula decimal), com as linhas expandidas da tabela (ver P31) | 04/11/2026 |
 | D31 | **Tela de Metas**: mesmas convenções das outras telas. Filtros: Mês de referência (meses com venda e meses com meta; os sem meta aparecem como "sem meta"), Filial, Departamento e Origem. Abas Dia, Semana, 1ª e 2ª Quinzena, Mês e Ano, relativas à referência; gráficos, tabela e cards seguem a aba escolhida. Cabe sem rolar em 1536 × 864 (tabela com altura mínima, ver P40) e 1920 × 1080 | 04/11/2026 |
 | D36 | **Tela Financeiro · Fluxo de Caixa**: mesmas convenções das outras telas (filtros Mês de referência e Filial). O gráfico do mês mostra entradas para cima, saídas para baixo e o resultado acumulado em eixo próprio à direita. Cabe sem rolar em 1536 × 864 e 1920 × 1080. As outras abas do módulo do print (Visão Financeira, DRE, DFC, Contas a Pagar e a Receber) não foram feitas (P49) | 04/11/2026 |
-| D39 | **Módulo Financeiro com abas** (Fluxo de Caixa em `/financeiro`, DFC em `/financeiro/dfc`) no cabeçalho, com o componente `AbasModulo`; o menu lateral mantém o item do módulo ativo nas subtelas. A barra lateral de filtros do print não foi adotada (filtros no cabeçalho, como nas outras telas) | 04/11/2026 |
+| D39 | **Financeiro em duas telas separadas no menu** (decisão do usuário, 06/11/2026): Fluxo de Caixa em `/financeiro` e DFC em `/financeiro/dfc`, cada uma com item próprio na barra lateral (ativo só na rota exata) e sem abas no cabeçalho. Antes eram abas do módulo; o componente `AbasModulo` continua no código, sem uso, para juntá-las de novo se for pedido. A barra lateral de filtros do print não foi adotada (filtros no cabeçalho, como nas outras telas) | 06/11/2026 |
 | D41 | **DFC sem dados até existir fonte de caixa** (decisão do usuário, 04/11/2026; visual restaurado em 05/11/2026): a tela `/financeiro/dfc` mantém o layout do print (KPIs, tabela da DFC pelo método direto, evolução, composição, saldo por conta e movimentações), com todos os valores vazios e, em cada bloco, o dado necessário e a pendência correspondente. Motivo: a versão pela DRE dava "geração de caixa" de R$ 302.672 em jul/2026 contra lucro líquido de R$ 287.310 (a diferença era só a perda de mercadoria), ignorava o prazo de fornecedores e de cartões e classificava a taxa de cartões como financiamento. Melhor não exibir do que exibir um número que parece caixa e não é. A leitura da `view_dre` fica para uma futura tela de DRE (o código está no histórico do git, commits `ceb99aa` e `e0d7431`) | 04/11/2026 |
 | D40 | ~~DFC: blocos sem fonte~~ — **substituída pela D41** | 04/11/2026 |
 

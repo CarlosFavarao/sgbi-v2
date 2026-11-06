@@ -4,7 +4,6 @@ import Icon from "@mdi/react";
 import { mdiDatabaseClockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { ABAS_FINANCEIRO, AbasModulo } from "@/components/abas-modulo";
 import { useAvisos, type Aviso } from "@/components/avisos";
 import { FiliaisSelect } from "@/components/filtros/filiais-select";
 import { Field } from "@/components/ui/field";
@@ -117,7 +116,6 @@ export function Financeiro() {
             {referencia ? `Referência ${formatData(referencia)}` : "Carregando…"}
           </p>
         </div>
-        <AbasModulo abas={ABAS_FINANCEIRO} label="Telas do Financeiro" />
       </div>
       {filiaisQuery.data && filtros.mes ? (
         <div className="flex flex-wrap items-end gap-3">

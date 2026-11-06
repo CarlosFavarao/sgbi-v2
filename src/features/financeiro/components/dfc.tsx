@@ -12,7 +12,6 @@ import {
 } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { ABAS_FINANCEIRO, AbasModulo } from "@/components/abas-modulo";
 import { useAvisos } from "@/components/avisos";
 import { FiliaisSelect } from "@/components/filtros/filiais-select";
 import { KpiCard, SemDados } from "@/components/kpi/kpi-card";
@@ -245,7 +244,6 @@ export function Dfc() {
               : "Demonstração dos Fluxos de Caixa"}
           </p>
         </div>
-        <AbasModulo abas={ABAS_FINANCEIRO} label="Telas do Financeiro" />
       </div>
       {dados && mes ? (
         <div className="flex flex-wrap items-end gap-3">
