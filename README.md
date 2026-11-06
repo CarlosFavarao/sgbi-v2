@@ -79,7 +79,7 @@ src/
 │   ├── kpi/                     # Card de KPI, variação e minigráfico
 │   ├── charts/                  # Gráfico de evolução (atual × comparação)
 │   └── ui/                      # Card, Select, Popover, Dialog, DateRangePicker,
-│                                # LoadingOverlay, ResizableRow...
+│                                # LoadingOverlay, DataTable...
 ├── db/                          # Cliente Drizzle (server-only) e schema
 ├── features/
 │   ├── painel-executivo/

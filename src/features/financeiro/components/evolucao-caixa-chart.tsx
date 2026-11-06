@@ -1,5 +1,6 @@
 "use client";
 
+import { DEBOUNCE_GRAFICO } from "@/components/charts/estilo";
 import {
   Bar,
   CartesianGrid,
@@ -39,7 +40,7 @@ function CaixaPlot({
   detalhado: boolean;
 }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" debounce={DEBOUNCE_GRAFICO}>
       <ComposedChart data={dados} stackOffset="sign" margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
         <CartesianGrid {...propsGrade(detalhado)} />
         <XAxis
@@ -184,7 +185,7 @@ export function EvolucaoCaixaChart({
       </CardHeader>
 
       <ExpandirGrafico
-        className="relative h-36 px-1 pb-2 pt-1"
+        className="relative min-h-0 flex-1 px-1 pb-2 pt-1"
         ocupado={carregando}
         titulo={titulo}
           descricao="Entradas (para cima) e saídas (para baixo) por dia, com o resultado acumulado; barras claras são previstas."

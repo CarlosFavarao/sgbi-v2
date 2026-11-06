@@ -3,11 +3,14 @@
 import Icon from "@mdi/react";
 import { mdiDatabaseClockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useAvisos, type Aviso } from "@/components/avisos";
 import { FiliaisSelect } from "@/components/filtros/filiais-select";
 import { Field } from "@/components/ui/field";
-import { ResizableRow } from "@/components/ui/resizable-row";
+import { BarraEdicao } from "@/components/layout/barra-edicao";
+import { BlocoKpis } from "@/components/layout/bloco-kpis";
+import { GradePersonalizavel } from "@/components/layout/grade-personalizavel";
+import { useLayout } from "@/components/layout/use-layout";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { addDays, firstDayOfMonth, lastDayOfMonth, mesesDoPeriodo, resolverAtalhoComparacao } from "@/lib/date";
@@ -21,7 +24,8 @@ import { CompromissosCard } from "./compromissos-card";
 import { EvolucaoMensalChart, IndicadoresCard, SaldoContasCard } from "./cards-inferiores";
 import { EvolucaoCaixaChart } from "./evolucao-caixa-chart";
 import { FluxoPrevistoTable } from "./fluxo-previsto-table";
-import { KpisFinanceiro } from "./kpis-financeiro";
+import { kpisDoFinanceiro } from "./kpis-financeiro";
+import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
 
 type FiltrosEstado = { mes: string | null; filiais: number[] | null };
 
@@ -36,6 +40,16 @@ function mesesAntes(mes: string, n: number) {
   const d = new Date(Date.UTC(a, m - 1 - n, 1));
   return d.toISOString().slice(0, 7);
 }
+
+/** Nomes dos KPIs na lista de ocultos. */
+const TITULOS_KPIS: Record<string, string> = {
+  saldo: "Saldo em Caixa Hoje",
+  entradas: "Entradas do Período",
+  saidas: "Saídas do Período",
+  resultado: "Resultado de Caixa",
+  "menor-saldo": "Menor Saldo Projetado",
+  cobertura: "Dias de Cobertura",
+};
 
 export function Financeiro() {
   const filiaisQuery = useQuery(financeiroQueries.filiais());
@@ -75,7 +89,7 @@ export function Financeiro() {
 
   const lista = movimentos.data?.movimentos ?? [];
   const pendente = carregando(movimentos);
-  const listasRef = useRef<HTMLDivElement>(null);
+  const grade = useLayout("financeiro", LAYOUT_PADRAO, LIMITES);
 
   const erro = [filiaisQuery, movimentos, movimentosAno, compromissos, prazos].find((q) => q.isError);
   const avisos: Aviso[] = [];
@@ -135,6 +149,11 @@ export function Financeiro() {
               onChange={(value) => setEstado((e) => ({ ...e, filiais: value }))}
             />
           </Field>
+          <BarraEdicao
+            grade={grade}
+            rotulos={ROTULOS}
+            rotulosBlocos={{ kpis: { titulo: "Indicadores", itens: TITULOS_KPIS } }}
+          />
         </div>
       ) : (
         <div className="flex h-14 items-center gap-2 text-sm text-muted-foreground">
@@ -172,68 +191,79 @@ export function Financeiro() {
     <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-2.5">
       {cabecalho}
 
-      <KpisFinanceiro
-        atual={atual}
-        anterior={anterior}
-        menorSaldo={menor}
-        series={{
-          entradas: diasDoMes.map((d) => ({ data: d.data, valor: d.entradas })),
-          saidas: diasDoMes.map((d) => ({ data: d.data, valor: d.saidas })),
-          resultado: diasDoMes.map((d) => ({ data: d.data, valor: d.entradas - d.saidas })),
+      <GradePersonalizavel
+        grade={grade}
+        rotulos={ROTULOS}
+        blocos={["kpis"]}
+        cards={{
+          kpis: (
+            <BlocoKpis
+              grade={grade}
+              bloco="kpis"
+              itens={kpisDoFinanceiro({
+                atual: atual,
+                anterior: anterior,
+                menorSaldo: menor,
+                series: {
+                  entradas: diasDoMes.map((d) => ({ data: d.data, valor: d.entradas })),
+                  saidas: diasDoMes.map((d) => ({ data: d.data, valor: d.saidas })),
+                  resultado: diasDoMes.map((d) => ({ data: d.data, valor: d.entradas - d.saidas })),
+                },
+                carregando: pendente,
+              })}
+              maxColunas={6}
+            />
+          ),
+          "evolucao-caixa": (
+            <EvolucaoCaixaChart
+              mes={filtros.mes}
+              referencia={referencia}
+              pontos={evolucaoDoMes(lista, mes, referencia)}
+              carregando={pendente}
+            />
+          ),
+          categorias: (
+            <CategoriasCard
+              entradas={porCategoria(lista, decorrido, "entrada", limite)}
+              saidas={porCategoria(lista, decorrido, "saida", limite)}
+              carregando={pendente}
+            />
+          ),
+          "fluxo-previsto": (
+            <FluxoPrevistoTable movimentos={lista} referencia={referencia} dias={dias} carregando={pendente} />
+          ),
+          compromissos: (
+            <CompromissosCard
+              compromissos={compromissos.data?.compromissos ?? []}
+              carregando={carregando(compromissos)}
+            />
+          ),
+          "saldo-contas": <SaldoContasCard />,
+          "evolucao-mensal": (
+            <EvolucaoMensalChart
+              pontos={porMes(
+                movimentosAno.data?.movimentos ?? [],
+                mesesDoPeriodo({ inicio: doze!.inicio, fim: doze!.fim }),
+              )}
+              carregando={carregando(movimentosAno)}
+            />
+          ),
+          "indicadores-caixa": (
+            <IndicadoresCard
+              indicadores={{
+                prazoCartoes: prazos.data?.recebimentoCartoes ?? null,
+                prazoClientes: prazos.data?.recebimentoClientes ?? null,
+                prazoPagamento: prazos.data?.pagamento ?? null,
+                vencidoReceber: abertos.receber,
+                vencidoPagar: abertos.pagar,
+                previstoEntradas: previsto.reduce((t, l) => t + l.entradas, 0),
+                previstoSaidas: previsto.reduce((t, l) => t + l.saidas, 0),
+              }}
+              carregando={pendente || carregando(prazos)}
+            />
+          ),
         }}
-        carregando={pendente}
       />
-
-      <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-[3fr_2fr]">
-        <EvolucaoCaixaChart
-          mes={filtros.mes}
-          referencia={referencia}
-          pontos={evolucaoDoMes(lista, mes, referencia)}
-          carregando={pendente}
-        />
-        <CategoriasCard
-          entradas={porCategoria(lista, decorrido, "entrada", limite)}
-          saidas={porCategoria(lista, decorrido, "saida", limite)}
-          carregando={pendente}
-        />
-      </div>
-
-      <ResizableRow
-        storageKey="sgbi:financeiro:linha-previsto"
-        larguraInicial={55}
-        abaixo={listasRef}
-        alturaMinima={200}
-        esquerda={<FluxoPrevistoTable movimentos={lista} referencia={referencia} dias={dias} carregando={pendente} />}
-        direita={
-          <CompromissosCard
-            compromissos={compromissos.data?.compromissos ?? []}
-            carregando={carregando(compromissos)}
-          />
-        }
-      />
-
-      <div ref={listasRef} className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-[1fr_1.4fr_1fr]">
-        <SaldoContasCard />
-        <EvolucaoMensalChart
-          pontos={porMes(
-            movimentosAno.data?.movimentos ?? [],
-            mesesDoPeriodo({ inicio: doze!.inicio, fim: doze!.fim }),
-          )}
-          carregando={carregando(movimentosAno)}
-        />
-        <IndicadoresCard
-          indicadores={{
-            prazoCartoes: prazos.data?.recebimentoCartoes ?? null,
-            prazoClientes: prazos.data?.recebimentoClientes ?? null,
-            prazoPagamento: prazos.data?.pagamento ?? null,
-            vencidoReceber: abertos.receber,
-            vencidoPagar: abertos.pagar,
-            previstoEntradas: previsto.reduce((t, l) => t + l.entradas, 0),
-            previstoSaidas: previsto.reduce((t, l) => t + l.saidas, 0),
-          }}
-          carregando={pendente || carregando(prazos)}
-        />
-      </div>
     </div>
   );
 }

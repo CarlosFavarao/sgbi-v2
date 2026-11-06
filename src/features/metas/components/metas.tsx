@@ -3,56 +3,45 @@
 import Icon from "@mdi/react";
 import { mdiDatabaseClockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAvisos, type Aviso } from "@/components/avisos";
-import { ResizableRow } from "@/components/ui/resizable-row";
+import { BarraEdicao } from "@/components/layout/barra-edicao";
+import { BlocoKpis } from "@/components/layout/bloco-kpis";
+import { GradePersonalizavel } from "@/components/layout/grade-personalizavel";
+import { useLayout } from "@/components/layout/use-layout";
 import { Spinner } from "@/components/ui/spinner";
 import { variacao } from "@/lib/calc";
 import { formatData, formatMesAno } from "@/lib/format";
-import {
-  curvaCumprimento,
-  percentual,
-  resumirMeta,
-  somaMetaDiaria,
-  somaRealizado,
-  type ResumoMeta,
-} from "../compute";
+import { curvaCumprimento, percentual, resumirMeta, somaMetaDiaria, somaRealizado, type ResumoMeta } from "../compute";
 import { dataReferencia, periodosDaReferencia } from "../periodos";
 import { metasQueries } from "../queries";
-import type {
-  AbaPeriodo,
-  FiltrosMetas,
-  MetaDia,
-  PeriodoMeta,
-  RealizadoDia,
-} from "../types";
+import type { AbaPeriodo, FiltrosMetas, MetaDia, PeriodoMeta, RealizadoDia } from "../types";
 import { AbasPeriodo } from "./abas-periodo";
-import {
-  calcularLinha,
-  AcompanhamentoTable,
-  type LinhaAcompanhamento,
-} from "./acompanhamento-table";
+import { calcularLinha, AcompanhamentoTable, type LinhaAcompanhamento } from "./acompanhamento-table";
 import { AtingimentoDepartamentos } from "./atingimento-departamentos";
-import {
-  MetasPorPeriodo,
-  RankingDepartamentos,
-  ritmo,
-  SituacaoMargem,
-} from "./cards-inferiores";
+import { MetasPorPeriodo, RankingDepartamentos, ritmo, SituacaoMargem } from "./cards-inferiores";
 import { CumprimentoChart } from "./cumprimento-chart";
 import { FiltrosMetasBar } from "./filtros-metas";
-import { KpisMetas, type Comparativo } from "./kpis-metas";
+import { kpisDasMetas, type Comparativo } from "./kpis-metas";
+import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
+
+/** Nomes fixos dos KPIs na lista de ocultos (o título do card muda com a aba). */
+const TITULOS_KPIS: Record<string, string> = {
+  meta: "Meta",
+  realizado: "Venda Realizada",
+  atingimento: "Atingimento da Meta",
+  diferenca: "Diferença para a Meta",
+  projecao: "Projeção",
+  status: "Status",
+};
 
 type FiltrosEstado = Omit<FiltrosMetas, "filiais" | "mes"> & {
   filiais: number[] | null;
   mes: string | null;
 };
 
-const carregando = (q: {
-  isPending: boolean;
-  isPlaceholderData: boolean;
-  fetchStatus: string;
-}) => (q.isPending && q.fetchStatus !== "idle") || q.isPlaceholderData;
+const carregando = (q: { isPending: boolean; isPlaceholderData: boolean; fetchStatus: string }) =>
+  (q.isPending && q.fetchStatus !== "idle") || q.isPlaceholderData;
 
 /** Resumo de uma aba a partir das metas diárias e do realizado (ou do total, na aba Ano). */
 function resumoDaAba(
@@ -63,12 +52,7 @@ function resumoDaAba(
 ): ResumoMeta {
   const meta = somaMetaDiaria(metas, p.periodo);
   const esperada = somaMetaDiaria(metas, p.decorrido);
-  const real =
-    p.id === "ano"
-      ? p.decorrido
-        ? totalAno
-        : null
-      : somaRealizado(realizados, p.decorrido);
+  const real = p.id === "ano" ? (p.decorrido ? totalAno : null) : somaRealizado(realizados, p.decorrido);
   return resumirMeta({
     meta,
     // Período não começado: nada esperado ainda; sem meta: null.
@@ -95,18 +79,13 @@ export function Metas() {
   const filtros: FiltrosMetas = {
     ...estado,
     mes: estado.mes ?? dataMaxima?.slice(0, 7) ?? "",
-    filiais:
-      estado.filiais ?? filiaisQuery.data?.filiais.map((f) => f.codigo) ?? [],
+    filiais: estado.filiais ?? filiaisQuery.data?.filiais.map((f) => f.codigo) ?? [],
   };
   const opcoes = useQuery(metasQueries.opcoes(filtros.filiais));
 
-  const referencia =
-    filtros.mes && dataMaxima ? dataReferencia(filtros.mes, dataMaxima) : null;
+  const referencia = filtros.mes && dataMaxima ? dataReferencia(filtros.mes, dataMaxima) : null;
   const periodos = useMemo(
-    () =>
-      filtros.mes && referencia
-        ? periodosDaReferencia(filtros.mes, referencia)
-        : [],
+    () => (filtros.mes && referencia ? periodosDaReferencia(filtros.mes, referencia) : []),
     [filtros.mes, referencia],
   );
   const ativa = periodos.find((p) => p.id === aba);
@@ -119,36 +98,22 @@ export function Metas() {
   const janela =
     mes?.decorrido && semana
       ? {
-          inicio:
-            semana.periodo.inicio < mes.periodo.inicio
-              ? semana.periodo.inicio
-              : mes.periodo.inicio,
+          inicio: semana.periodo.inicio < mes.periodo.inicio ? semana.periodo.inicio : mes.periodo.inicio,
           fim: mes.decorrido.fim,
         }
       : null;
 
-  const metasAno = useQuery(
-    metasQueries.metasDiarias(filtros, ano?.periodo ?? null),
-  );
-  const metasComparacao = useQuery(
-    metasQueries.metasDiarias(filtros, ativa?.periodoComparacao ?? null),
-  );
+  const metasAno = useQuery(metasQueries.metasDiarias(filtros, ano?.periodo ?? null));
+  const metasComparacao = useQuery(metasQueries.metasDiarias(filtros, ativa?.periodoComparacao ?? null));
   const realizadoMes = useQuery(metasQueries.realizadoDiario(filtros, janela));
-  const totalAno = useQuery(
-    metasQueries.total(filtros, ano?.decorrido ?? null),
-  );
-  const totalComparacao = useQuery(
-    metasQueries.total(filtros, ativa?.comparacao ?? null),
-  );
-  const departamentos = useQuery(
-    metasQueries.niveis(filtros, "departamento", ativa),
-  );
+  const totalAno = useQuery(metasQueries.total(filtros, ano?.decorrido ?? null));
+  const totalComparacao = useQuery(metasQueries.total(filtros, ativa?.comparacao ?? null));
+  const departamentos = useQuery(metasQueries.niveis(filtros, "departamento", ativa));
 
   const metasDias = metasAno.data?.dias ?? [];
   const realizados = realizadoMes.data?.dias ?? [];
   const metasPendentes = carregando(metasAno);
-  const realizadoPendente =
-    carregando(realizadoMes) || (aba === "ano" && carregando(totalAno));
+  const realizadoPendente = carregando(realizadoMes) || (aba === "ano" && carregando(totalAno));
 
   const resumos = periodos.map((p) => ({
     periodo: p,
@@ -159,9 +124,7 @@ export function Metas() {
   // Comparação: meta do período anterior inteiro e realizado até o mesmo ponto.
   let comparativo: Comparativo | null = null;
   if (ativa?.comparacao && metasComparacao.data && totalComparacao.data) {
-    const meta =
-      somaMetaDiaria(metasComparacao.data.dias, ativa.periodoComparacao)
-        ?.meta ?? null;
+    const meta = somaMetaDiaria(metasComparacao.data.dias, ativa.periodoComparacao)?.meta ?? null;
     const realizado = totalComparacao.data.venda;
     comparativo = {
       meta,
@@ -173,10 +136,7 @@ export function Metas() {
 
   // Séries diárias da parte decorrida (minigráficos).
   const diasDecorridos = ativa?.decorrido
-    ? realizados.filter(
-        (d) =>
-          d.data >= ativa.decorrido!.inicio && d.data <= ativa.decorrido!.fim,
-      )
+    ? realizados.filter((d) => d.data >= ativa.decorrido!.inicio && d.data <= ativa.decorrido!.fim)
     : [];
   const metaDoDia = new Map(metasDias.map((m) => [m.data, m.meta]));
   const series = {
@@ -191,10 +151,7 @@ export function Metas() {
     }),
   };
 
-  const pontosCumprimento =
-    mes && referencia
-      ? curvaCumprimento(mes.periodo, referencia, metasDias, realizados)
-      : [];
+  const pontosCumprimento = mes && referencia ? curvaCumprimento(mes.periodo, referencia, metasDias, realizados) : [];
 
   const linhasDepartamento: LinhaAcompanhamento[] = ativa
     ? (departamentos.data?.linhas ?? []).map((l) => calcularLinha(l, ativa))
@@ -204,9 +161,7 @@ export function Metas() {
     .filter((l) => l.resumo.status === "abaixo")
     .sort((a, b) => ritmo(a.resumo)! - ritmo(b.resumo)!);
   const melhores = comRitmo
-    .filter(
-      (l) => l.resumo.status === "acima" || l.resumo.status === "no-ritmo",
-    )
+    .filter((l) => l.resumo.status === "acima" || l.resumo.status === "no-ritmo")
     .sort((a, b) => ritmo(b.resumo)! - ritmo(a.resumo)!);
 
   const total: LinhaAcompanhamento | null = resumoAtivo
@@ -215,15 +170,11 @@ export function Metas() {
         descricao: "Total",
         pai: null,
         resumo: resumoAtivo,
-        variacaoVenda: ativa?.decorrido
-          ? variacao(resumoAtivo.realizado, totalComparacao.data?.venda ?? null)
-          : null,
+        variacaoVenda: ativa?.decorrido ? variacao(resumoAtivo.realizado, totalComparacao.data?.venda ?? null) : null,
       }
     : null;
   const esperadoPct =
-    resumoAtivo?.meta && resumoAtivo.metaEsperada != null
-      ? (resumoAtivo.metaEsperada / resumoAtivo.meta) * 100
-      : null;
+    resumoAtivo?.meta && resumoAtivo.metaEsperada != null ? (resumoAtivo.metaEsperada / resumoAtivo.meta) * 100 : null;
 
   const erro = [
     filiaisQuery,
@@ -245,11 +196,7 @@ export function Metas() {
       acao: { label: "Tentar novamente", onClick: () => void erro.refetch() },
     });
   }
-  if (
-    !metasPendentes &&
-    filtros.mes &&
-    !metasDias.some((m) => m.data.startsWith(filtros.mes) && m.meta > 0)
-  ) {
+  if (!metasPendentes && filtros.mes && !metasDias.some((m) => m.data.startsWith(filtros.mes) && m.meta > 0)) {
     avisos.push({
       id: "sem-meta",
       nivel: "atencao",
@@ -276,7 +223,7 @@ export function Metas() {
   // Avisos vão para o botão de triângulo na barra lateral (popup), não para faixas no topo.
   useAvisos("metas", avisos);
 
-  const listasRef = useRef<HTMLDivElement>(null);
+  const grade = useLayout("metas", LAYOUT_PADRAO, LIMITES);
   const deptoCarregando = carregando(departamentos);
 
   return (
@@ -286,27 +233,32 @@ export function Metas() {
           <h1 className="text-xl font-bold tracking-tight">Metas</h1>
           <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             <Icon path={mdiDatabaseClockOutline} size={0.6} aria-hidden />
-            {referencia
-              ? `Referência ${formatData(referencia)}`
-              : "Carregando…"}
+            {referencia ? `Referência ${formatData(referencia)}` : "Carregando…"}
           </p>
         </div>
-        {filiaisQuery.data && opcoes.data && filtros.mes ? (
-          <FiltrosMetasBar
-            filtros={filtros}
-            onChange={(f) => setEstado(f)}
-            filiais={filiaisQuery.data.filiais}
-            dataMinima={filiaisQuery.data.dataMinima}
-            dataMaxima={filiaisQuery.data.dataMaxima}
-            mesesComMeta={opcoes.data.mesesComMeta}
-            departamentos={opcoes.data.departamentos}
+        <div className="flex flex-wrap items-end gap-3">
+          {filiaisQuery.data && opcoes.data && filtros.mes ? (
+            <FiltrosMetasBar
+              filtros={filtros}
+              onChange={(f) => setEstado(f)}
+              filiais={filiaisQuery.data.filiais}
+              dataMinima={filiaisQuery.data.dataMinima}
+              dataMaxima={filiaisQuery.data.dataMaxima}
+              mesesComMeta={opcoes.data.mesesComMeta}
+              departamentos={opcoes.data.departamentos}
+            />
+          ) : (
+            <div className="flex h-14 items-center gap-2 text-sm text-muted-foreground">
+              <Spinner className="size-5 text-primary" />
+              Carregando filtros…
+            </div>
+          )}
+          <BarraEdicao
+            grade={grade}
+            rotulos={ROTULOS}
+            rotulosBlocos={{ kpis: { titulo: "Indicadores", itens: TITULOS_KPIS } }}
           />
-        ) : (
-          <div className="flex h-14 items-center gap-2 text-sm text-muted-foreground">
-            <Spinner className="size-5 text-primary" />
-            Carregando filtros…
-          </div>
-        )}
+        </div>
       </div>
 
       {!referencia || !ativa || !resumoAtivo || !mes || !total ? (
@@ -316,77 +268,72 @@ export function Metas() {
         </div>
       ) : (
         <>
-          <AbasPeriodo
-            periodos={periodos}
-            value={aba}
-            onChange={setAba}
-            referencia={referencia}
+          <AbasPeriodo periodos={periodos} value={aba} onChange={setAba} referencia={referencia} />
+
+          <GradePersonalizavel
+            grade={grade}
+            rotulos={ROTULOS}
+            blocos={["kpis"]}
+            cards={{
+              kpis: (
+                <BlocoKpis
+                  grade={grade}
+                  bloco="kpis"
+                  itens={kpisDasMetas({
+                    aba: aba,
+                    resumo: resumoAtivo,
+                    comparativo: comparativo,
+                    rotuloComparacao: ativa.rotuloComparacao,
+                    series: series,
+                    carregando: { meta: metasPendentes, realizado: realizadoPendente },
+                  })}
+                  maxColunas={6}
+                />
+              ),
+              cumprimento: (
+                <CumprimentoChart
+                  mes={filtros.mes}
+                  referencia={referencia}
+                  pontos={pontosCumprimento}
+                  carregando={metasPendentes || carregando(realizadoMes)}
+                />
+              ),
+              atingimento: (
+                <AtingimentoDepartamentos
+                  titulo={`Atingimento por Departamento · ${ativa.label}`}
+                  linhas={linhasDepartamento}
+                  esperado={esperadoPct}
+                  carregando={deptoCarregando}
+                />
+              ),
+              acompanhamento: <AcompanhamentoTable filtros={filtros} aba={ativa} total={total} />,
+              "metas-periodo": (
+                <MetasPorPeriodo
+                  linhas={resumos}
+                  ativa={aba}
+                  onSelecionar={setAba}
+                  carregando={metasPendentes || carregando(realizadoMes)}
+                />
+              ),
+              "em-risco": (
+                <RankingDepartamentos
+                  titulo={`Departamentos em Risco · ${ativa.label}`}
+                  descricao="Departamentos abaixo do ritmo da meta (realizado ÷ meta esperada até a referência), do pior para o melhor."
+                  linhas={emRisco}
+                  carregando={deptoCarregando}
+                />
+              ),
+              melhores: (
+                <RankingDepartamentos
+                  titulo={`Melhor Desempenho · ${ativa.label}`}
+                  descricao="Departamentos acima ou no ritmo da meta, do melhor para o pior."
+                  linhas={melhores}
+                  carregando={deptoCarregando}
+                />
+              ),
+              margem: <SituacaoMargem linhas={linhasDepartamento} carregando={deptoCarregando} />,
+            }}
           />
-
-          <KpisMetas
-            aba={aba}
-            resumo={resumoAtivo}
-            comparativo={comparativo}
-            rotuloComparacao={ativa.rotuloComparacao}
-            series={series}
-            carregando={{ meta: metasPendentes, realizado: realizadoPendente }}
-          />
-
-          <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-[2fr_1fr]">
-            <CumprimentoChart
-              mes={filtros.mes}
-              referencia={referencia}
-              pontos={pontosCumprimento}
-              carregando={metasPendentes || carregando(realizadoMes)}
-            />
-            <AtingimentoDepartamentos
-              titulo={`Atingimento por Departamento · ${ativa.label}`}
-              linhas={linhasDepartamento}
-              esperado={esperadoPct}
-              carregando={deptoCarregando}
-            />
-          </div>
-
-          <ResizableRow
-            storageKey="sgbi:metas:linha-acompanhamento"
-            abaixo={listasRef}
-            alturaMinima={190}
-            esquerda={
-              <AcompanhamentoTable
-                filtros={filtros}
-                aba={ativa}
-                total={total}
-              />
-            }
-          />
-
-          <div
-            ref={listasRef}
-            className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-4"
-          >
-            <MetasPorPeriodo
-              linhas={resumos}
-              ativa={aba}
-              onSelecionar={setAba}
-              carregando={metasPendentes || carregando(realizadoMes)}
-            />
-            <RankingDepartamentos
-              titulo={`Departamentos em Risco · ${ativa.label}`}
-              descricao="Departamentos abaixo do ritmo da meta (realizado ÷ meta esperada até a referência), do pior para o melhor."
-              linhas={emRisco}
-              carregando={deptoCarregando}
-            />
-            <RankingDepartamentos
-              titulo={`Melhor Desempenho · ${ativa.label}`}
-              descricao="Departamentos acima ou no ritmo da meta, do melhor para o pior."
-              linhas={melhores}
-              carregando={deptoCarregando}
-            />
-            <SituacaoMargem
-              linhas={linhasDepartamento}
-              carregando={deptoCarregando}
-            />
-          </div>
         </>
       )}
     </div>

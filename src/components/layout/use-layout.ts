@@ -16,9 +16,6 @@ import {
 } from "@/lib/layout";
 import { useTelaLarga } from "./tela-larga";
 
-/** Chave da linha nova no arraste (área "Soltar aqui para criar uma linha"). */
-export const NOVA_LINHA = "__nova-linha";
-
 const chave = (tela: string) => `sgbi:layout:${tela}:v1`;
 
 // Sem localStorage (navegação privada, bloqueio): o layout vale só até recarregar.
@@ -103,15 +100,16 @@ export function useLayout(tela: string, padrao: Layout, limites: Limites) {
       editando,
       larga,
       setEditando,
-      redimensionar: (id: string, desejado: { x: number; w: number; h: number }, borda: Borda) =>
+      redimensionar: (id: string, desejado: { x: number; y: number; w: number; h: number }, borda: Borda) =>
         atualizar((l) => redimensionar(l, id, desejado, borda, limites)),
+      /** Grava um layout já calculado (ex.: o resultado do arraste, igual ao que a prévia mostrou). */
+      substituir: (novo: Layout) => atualizar(() => novo),
       /** Troca dois cards de lugar (o que não couber vai para uma linha nova abaixo). */
-      trocar: (idA: string, idB: string) => atualizar((l) => trocar(l, idA, idB)),
-      /** Move o card para a linha (ou uma linha nova, com `null`), começando na coluna `x`. */
-      posicionar: (id: string, linhaId: string | null, x: number) =>
-        atualizar((l) => posicionar(l, id, linhaId, x, limites)),
+      trocar: (idA: string, idB: string) => atualizar((l) => trocar(l, idA, idB, limites)),
+      /** Move o card para a coluna `x` e a linha `y` (quem ficar por baixo desce). */
+      posicionar: (id: string, x: number, y: number) => atualizar((l) => posicionar(l, id, x, y, limites)),
       ocultar: (id: string) => atualizar((l) => ocultar(l, id)),
-      mostrar: (id: string) => atualizar((l) => mostrar(l, id, limites)),
+      mostrar: (id: string) => atualizar((l) => mostrar(l, id)),
       alterarItemBloco: (bloco: string, id: string, mudanca: Parameters<typeof alterarItemBloco>[3]) =>
         atualizar((l) => alterarItemBloco(l, bloco, id, mudanca)),
       ordenarBloco: (bloco: string, ids: string[]) => atualizar((l) => ordenarBloco(l, bloco, ids)),

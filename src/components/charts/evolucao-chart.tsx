@@ -1,5 +1,6 @@
 "use client";
 
+import { DEBOUNCE_GRAFICO } from "@/components/charts/estilo";
 import { useState } from "react";
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ExpandirGrafico } from "@/components/charts/expandir-grafico";
@@ -50,7 +51,7 @@ function EvolucaoPlot({
   detalhado,
 }: PlotProps) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" debounce={DEBOUNCE_GRAFICO}>
       <ComposedChart data={dados} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
         <CartesianGrid {...propsGrade(detalhado)} />
         <XAxis

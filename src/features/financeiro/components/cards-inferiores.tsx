@@ -1,5 +1,6 @@
 "use client";
 
+import { DEBOUNCE_GRAFICO } from "@/components/charts/estilo";
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { propsEixoX, propsEixoY, propsGrade } from "@/components/charts/estilo";
 import { ExpandirGrafico } from "@/components/charts/expandir-grafico";
@@ -17,7 +18,7 @@ export function SaldoContasCard() {
       <CardHeader>
         <CardTitle className="text-sm">Saldo de Caixa por Conta</CardTitle>
       </CardHeader>
-      <div className="h-44">
+      <div className="min-h-0 flex-1">
         <NaoIntegrado
           titulo="Saldos bancários não integrados"
           detalhe="O banco do SGBI não tem contas bancárias nem saldos. Ver pendência P42 em decisoes-e-pendencias.md."
@@ -36,7 +37,7 @@ function MensalPlot({
   detalhado: boolean;
 }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" debounce={DEBOUNCE_GRAFICO}>
       <ComposedChart data={pontos} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
         <CartesianGrid {...propsGrade(detalhado)} />
         <XAxis
@@ -116,7 +117,7 @@ export function EvolucaoMensalChart({ pontos, carregando }: { pontos: PontoMensa
         
       </CardHeader>
       <ExpandirGrafico
-        className="relative h-36 px-1 pb-2 pt-1"
+        className="relative min-h-0 flex-1 px-1 pb-2 pt-1"
         ocupado={carregando}
         titulo={TITULO_MENSAL}
           descricao="Entradas, saídas e resultado de cada um dos 12 meses até o mês de referência."
@@ -181,7 +182,7 @@ export function IndicadoresCard({ indicadores, carregando }: { indicadores: Indi
       <CardHeader>
         <CardTitle className="text-sm">Indicadores de Caixa</CardTitle>
       </CardHeader>
-      <div className="relative px-3 pb-3 pt-1.5" aria-busy={carregando}>
+      <div className="relative min-h-0 flex-1 overflow-auto px-3 pb-3 pt-1.5" aria-busy={carregando}>
         <div className="overflow-hidden rounded-lg border">
           <table className="w-full border-collapse text-xs">
             <tbody>

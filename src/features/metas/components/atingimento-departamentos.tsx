@@ -104,7 +104,7 @@ export function AtingimentoDepartamentos({
       </CardHeader>
 
       <ExpandirGrafico
-        className="relative h-32 px-4 pb-2 pt-1.5"
+        className="relative min-h-0 flex-1 px-4 pb-2 pt-1.5"
         ocupado={carregando}
         titulo={titulo}
             descricao="Realizado ÷ meta do período de todos os departamentos; a linha tracejada marca o esperado até a referência."

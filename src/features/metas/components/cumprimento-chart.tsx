@@ -1,5 +1,6 @@
 "use client";
 
+import { DEBOUNCE_GRAFICO } from "@/components/charts/estilo";
 import {
   CartesianGrid,
   ComposedChart,
@@ -35,7 +36,7 @@ function CumprimentoPlot({
   detalhado: boolean;
 }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" debounce={DEBOUNCE_GRAFICO}>
       <ComposedChart data={pontos} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
         <CartesianGrid {...propsGrade(detalhado)} />
         <XAxis
@@ -150,7 +151,7 @@ export function CumprimentoChart({
       </CardHeader>
 
       <ExpandirGrafico
-        className="relative h-32 px-1 pb-2 pt-1"
+        className="relative min-h-0 flex-1 px-1 pb-2 pt-1"
         ocupado={carregando}
         titulo={titulo}
           descricao="Venda acumulada do mês, meta acumulada esperada e projeção de fechamento."

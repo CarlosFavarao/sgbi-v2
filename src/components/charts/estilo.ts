@@ -26,3 +26,9 @@ export const propsGrade = (detalhado: boolean) => ({
 
 /** Tamanho de bolinhas e linhas do gráfico ampliado. */
 export const escala = (detalhado: boolean) => ({ ponto: detalhado ? 4 : 3, pontoAtivo: detalhado ? 6 : 5, barra: detalhado ? 1.8 : 1 });
+
+/**
+ * Espera (ms) antes de redesenhar um gráfico cujo card mudou de tamanho: enquanto o
+ * usuário redimensiona ou move cards, o Recharts não refaz o SVG a cada quadro (D43).
+ */
+export const DEBOUNCE_GRAFICO = 180;

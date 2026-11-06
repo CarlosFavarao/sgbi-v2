@@ -11,20 +11,24 @@ import {
   mdiTableLarge,
 } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useAvisos } from "@/components/avisos";
+import { BarraEdicao } from "@/components/layout/barra-edicao";
+import { BlocoKpis, type ItemDoBloco } from "@/components/layout/bloco-kpis";
+import { GradePersonalizavel } from "@/components/layout/grade-personalizavel";
+import { useLayout } from "@/components/layout/use-layout";
 import { FiliaisSelect } from "@/components/filtros/filiais-select";
 import { KpiCard, SemDados } from "@/components/kpi/kpi-card";
 import { NaoIntegrado } from "@/components/nao-integrado";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { Field } from "@/components/ui/field";
-import { ResizableRow } from "@/components/ui/resizable-row";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { filiaisQuery } from "@/lib/api";
 import { mesesDoPeriodo } from "@/lib/date";
 import { formatMesAno } from "@/lib/format";
+import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout-dfc";
 
 /**
  * DFC (método direto) sem dados até existir fonte de caixa (D41, P51): a tela
@@ -196,7 +200,7 @@ function CardVazio({
       <CardHeader>
         <CardTitle>{titulo}</CardTitle>
       </CardHeader>
-      <div className="min-h-36 flex-1">
+      <div className="min-h-0 flex-1">
         <NaoIntegrado titulo={aviso} detalhe={detalhe} />
       </div>
     </Card>
@@ -208,7 +212,6 @@ export function Dfc() {
   const [mesEscolhido, setMes] = useState<string | null>(null);
   const [comparacao, setComparacao] = useState<Comparacao>("mes-anterior");
   const [filiaisEscolhidas, setFiliais] = useState<number[] | null>(null);
-  const listasRef = useRef<HTMLDivElement>(null);
 
   const dados = filiais.data;
   const meses =
@@ -230,6 +233,75 @@ export function Dfc() {
       ],
     },
   ]);
+
+  const grade = useLayout("dfc", LAYOUT_PADRAO, LIMITES);
+  const kpis: ItemDoBloco[] = [
+    {
+      id: "saldo-inicial",
+      titulo: "Saldo Inicial de Caixa",
+      node: (
+        <KpiCard
+          titulo="Saldo Inicial de Caixa"
+          ajuda="Saldo de caixa e equivalentes no início do mês. Depende dos saldos das contas e caixas (P42)."
+          icone={mdiDatabaseOutline}
+          tom="blue"
+          valor={<SemDados>Saldos bancários não integrados</SemDados>}
+        />
+      ),
+    },
+    {
+      id: "entradas",
+      titulo: "Entradas de Caixa",
+      node: (
+        <KpiCard
+          titulo="Entradas de Caixa"
+          ajuda="Recebimentos efetivos do mês: vendas à vista, cartões liquidados e títulos recebidos (P43, P44, P47)."
+          icone={mdiArrowTopRight}
+          tom="green"
+          valor={<SemDados>{AGUARDANDO}</SemDados>}
+        />
+      ),
+    },
+    {
+      id: "saidas",
+      titulo: "Saídas de Caixa",
+      node: (
+        <KpiCard
+          titulo="Saídas de Caixa"
+          ajuda="Pagamentos efetivos do mês: fornecedores, pessoal, despesas, impostos, investimentos e empréstimos (P45, P47)."
+          icone={mdiArrowBottomRight}
+          tom="coral"
+          valor={<SemDados>{AGUARDANDO}</SemDados>}
+        />
+      ),
+    },
+    {
+      id: "geracao",
+      titulo: "Geração Líquida de Caixa",
+      node: (
+        <KpiCard
+          titulo="Geração Líquida de Caixa"
+          ajuda="Entradas menos saídas das três atividades. Depende das fontes de entradas e saídas (P51)."
+          icone={mdiChartBar}
+          tom="teal"
+          valor={<SemDados>{AGUARDANDO}</SemDados>}
+        />
+      ),
+    },
+    {
+      id: "saldo-final",
+      titulo: "Saldo Final de Caixa",
+      node: (
+        <KpiCard
+          titulo="Saldo Final de Caixa"
+          ajuda="Saldo inicial + geração líquida (P42)."
+          icone={mdiSafe}
+          tom="purple"
+          valor={<SemDados>Saldos bancários não integrados</SemDados>}
+        />
+      ),
+    },
+  ];
 
   const cabecalho = (
     <div className="flex flex-wrap items-end justify-between gap-3">
@@ -272,6 +344,13 @@ export function Dfc() {
               onChange={setFiliais}
             />
           </Field>
+          <BarraEdicao
+            grade={grade}
+            rotulos={ROTULOS}
+            rotulosBlocos={{
+              kpis: { titulo: "Indicadores", itens: Object.fromEntries(kpis.map((k) => [k.id, k.titulo])) },
+            }}
+          />
         </div>
       ) : (
         <div className="flex h-14 items-center gap-2 text-sm text-muted-foreground">
@@ -286,79 +365,43 @@ export function Dfc() {
     <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-2.5">
       {cabecalho}
 
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <KpiCard
-          titulo="Saldo Inicial de Caixa"
-          ajuda="Saldo de caixa e equivalentes no início do mês. Depende dos saldos das contas e caixas (P42)."
-          icone={mdiDatabaseOutline}
-          tom="blue"
-          valor={<SemDados>Saldos bancários não integrados</SemDados>}
-        />
-        <KpiCard
-          titulo="Entradas de Caixa"
-          ajuda="Recebimentos efetivos do mês: vendas à vista, cartões liquidados e títulos recebidos (P43, P44, P47)."
-          icone={mdiArrowTopRight}
-          tom="green"
-          valor={<SemDados>{AGUARDANDO}</SemDados>}
-        />
-        <KpiCard
-          titulo="Saídas de Caixa"
-          ajuda="Pagamentos efetivos do mês: fornecedores, pessoal, despesas, impostos, investimentos e empréstimos (P45, P47)."
-          icone={mdiArrowBottomRight}
-          tom="coral"
-          valor={<SemDados>{AGUARDANDO}</SemDados>}
-        />
-        <KpiCard
-          titulo="Geração Líquida de Caixa"
-          ajuda="Entradas menos saídas das três atividades. Depende das fontes de entradas e saídas (P51)."
-          icone={mdiChartBar}
-          tom="teal"
-          valor={<SemDados>{AGUARDANDO}</SemDados>}
-        />
-        <KpiCard
-          titulo="Saldo Final de Caixa"
-          ajuda="Saldo inicial + geração líquida (P42)."
-          icone={mdiSafe}
-          tom="purple"
-          valor={<SemDados>Saldos bancários não integrados</SemDados>}
-        />
-      </div>
-
-      <ResizableRow
-        storageKey="sgbi:dfc:linha-principal"
-        larguraInicial={58}
-        abaixo={listasRef}
-        alturaMinima={300}
-        esquerda={<DfcTabela mes={mes || "2000-01"} mesComparacao={mesComparacao || "2000-01"} />}
-        direita={
-          <div className="flex h-full min-h-0 flex-col gap-2.5">
+      <GradePersonalizavel
+        grade={grade}
+        rotulos={ROTULOS}
+        blocos={["kpis"]}
+        cards={{
+          kpis: <BlocoKpis grade={grade} bloco="kpis" itens={kpis} maxColunas={5} />,
+          tabela: <DfcTabela mes={mes || "2000-01"} mesComparacao={mesComparacao || "2000-01"} />,
+          evolucao: (
             <CardVazio
               titulo="Evolução da Geração de Caixa · 12 meses"
               aviso={AGUARDANDO}
               detalhe="Entradas, saídas e geração líquida por mês dependem dos recebimentos e pagamentos efetivos (P51)."
             />
+          ),
+          composicao: (
             <CardVazio
-              className="flex-1"
               titulo="Composição das Entradas e Saídas"
               aviso={AGUARDANDO}
               detalhe="A composição por forma de recebimento e por categoria de pagamento depende das vendas por forma de pagamento (P44) e do plano de contas dos pagamentos (P45)."
             />
-          </div>
-        }
+          ),
+          "saldo-conta": (
+            <CardVazio
+              titulo="Saldo por Conta Financeira"
+              aviso="Contas financeiras não integradas"
+              detalhe="O banco do SGBI não tem contas bancárias, caixas nem saldos (P42)."
+            />
+          ),
+          movimentacoes: (
+            <CardVazio
+              titulo="Movimentações Relevantes do Período"
+              aviso={AGUARDANDO}
+              detalhe="As maiores entradas e saídas do mês, por conta financeira, dependem do movimento bancário e das baixas dos títulos (P42, P47)."
+            />
+          ),
+        }}
       />
-
-      <div ref={listasRef} className="grid grid-cols-1 gap-2.5 xl:grid-cols-[2fr_3fr]">
-        <CardVazio
-          titulo="Saldo por Conta Financeira"
-          aviso="Contas financeiras não integradas"
-          detalhe="O banco do SGBI não tem contas bancárias, caixas nem saldos (P42)."
-        />
-        <CardVazio
-          titulo="Movimentações Relevantes do Período"
-          aviso={AGUARDANDO}
-          detalhe="As maiores entradas e saídas do mês, por conta financeira, dependem do movimento bancário e das baixas dos títulos (P42, P47)."
-        />
-      </div>
     </div>
   );
 }

@@ -33,7 +33,7 @@ function CardLista({
         </CardTitle>
         {acao}
       </CardHeader>
-      <div className="relative px-3 pb-3 pt-1.5" aria-busy={carregando}>
+      <div className="relative min-h-0 flex-1 overflow-hidden px-3 pb-3 pt-1.5" aria-busy={carregando}>
         <div className="overflow-hidden rounded-lg border">{children}</div>
         <LoadingOverlay ativo={carregando} label={titulo} className="rounded-b-2xl" />
       </div>

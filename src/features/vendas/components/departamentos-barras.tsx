@@ -114,7 +114,7 @@ export function DepartamentosBarras({
       </CardHeader>
 
       <ExpandirGrafico
-        className="relative h-36 px-4 pb-2 pt-1.5"
+        className="relative min-h-0 flex-1 px-4 pb-2 pt-1.5"
         ocupado={carregando}
         titulo="Vendas por Departamento"
         descricao={`${MEDIDAS.find((m) => m.value === medida)!.label} de todos os departamentos, com a participação no total.`}

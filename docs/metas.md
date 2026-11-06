@@ -61,3 +61,7 @@ Limitações conhecidas:
 
 - A semana que começa no ano anterior não soma a meta dos dias do ano anterior (a meta diária é carregada só do ano da referência).
 - Sem dados do dia (API do VX): a aba Dia mostra o último dia com venda.
+
+## Layout personalizável (D43)
+
+A tela usa a grade personalizável, como o Painel Executivo (ver `docs/painel-executivo-poc.md`, seção 9): o lápis ao lado dos filtros liga a edição (arrastar, trocar de lugar, redimensionar pelas bordas e cantos, ocultar, restaurar o padrão). O layout padrão e os limites de cada card ficam em `src/features/metas/layout.ts`.

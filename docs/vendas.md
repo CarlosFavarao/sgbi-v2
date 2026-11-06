@@ -64,3 +64,7 @@ Limitações conhecidas:
 - Primeira consulta de cupons lenta (P23).
 - Sem dados do dia (API do VX).
 - Em homologação o faturamento está zerado: com Origem "Faturamento", venda, ABC e listas ficam vazios.
+
+## Layout personalizável (D43)
+
+A tela usa a grade personalizável, como o Painel Executivo (ver `docs/painel-executivo-poc.md`, seção 9): o lápis ao lado dos filtros liga a edição (arrastar, trocar de lugar, redimensionar pelas bordas e cantos, ocultar, restaurar o padrão). O layout padrão e os limites de cada card ficam em `src/features/vendas/layout.ts`.

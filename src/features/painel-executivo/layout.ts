@@ -1,29 +1,19 @@
 import type { Layout, Limites } from "@/lib/layout";
 
 /**
- * Layout padrão do Painel Executivo (D43): linhas de 12 colunas; `h` em
+ * Layout padrão do Painel Executivo (D43): grade de 12 colunas; `h` em
  * unidades de linha (a unidade é calculada para o padrão ocupar a tela sem rolar).
- * `x` = coluna de início. Ao mudar ids ou a estrutura, suba a `versao` (o salvo antigo é descartado).
+ * `x`/`y` = coluna e linha do canto superior esquerdo. Ao mudar ids ou a estrutura, suba a `versao` (o salvo antigo é descartado).
  */
 export const LAYOUT_PADRAO: Layout = {
-  versao: 2,
-  linhas: [
-    { id: "indicadores", itens: [{ id: "kpis", x: 0, w: 12, h: 5, visivel: true }] },
-    {
-      id: "evolucao",
-      itens: [
-        { id: "evolucao-venda", x: 0, w: 4, h: 6, visivel: true },
-        { id: "evolucao-margem", x: 4, w: 4, h: 6, visivel: true },
-        { id: "meta", x: 8, w: 4, h: 6, visivel: true },
-      ],
-    },
-    {
-      id: "departamentos",
-      itens: [
-        { id: "departamentos", x: 0, w: 8, h: 7, visivel: true },
-        { id: "alertas", x: 8, w: 4, h: 7, visivel: true },
-      ],
-    },
+  versao: 3,
+  itens: [
+    { id: "kpis", x: 0, y: 0, w: 12, h: 5, visivel: true },
+    { id: "evolucao-venda", x: 0, y: 5, w: 4, h: 6, visivel: true },
+    { id: "evolucao-margem", x: 4, y: 5, w: 4, h: 6, visivel: true },
+    { id: "meta", x: 8, y: 5, w: 4, h: 6, visivel: true },
+    { id: "departamentos", x: 0, y: 11, w: 8, h: 7, visivel: true },
+    { id: "alertas", x: 8, y: 11, w: 4, h: 7, visivel: true },
   ],
   blocos: {
     kpis: [
@@ -37,7 +27,7 @@ export const LAYOUT_PADRAO: Layout = {
       "compra-sobre-venda",
       "cancelamentos",
       "descontos",
-    ].map((id) => ({ id, x: 0, w: 1, h: 1, visivel: true })),
+    ].map((id) => ({ id, x: 0, y: 0, w: 1, h: 1, visivel: true })),
   },
 };
 

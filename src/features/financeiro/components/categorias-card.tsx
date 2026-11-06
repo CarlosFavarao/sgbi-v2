@@ -87,7 +87,7 @@ export function CategoriasCard({
         {seletor}
       </CardHeader>
       <ExpandirGrafico
-        className="relative grid h-36 grid-cols-2 gap-3 overflow-hidden px-4 pb-2 pt-1.5"
+        className="relative grid min-h-36 flex-1 grid-cols-2 gap-3 overflow-hidden px-4 pb-2 pt-1.5"
         ocupado={carregando}
         titulo="Entradas e Saídas por Categoria"
         descricao="Todas as categorias realizadas no mês."

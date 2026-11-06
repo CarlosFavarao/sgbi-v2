@@ -3,11 +3,14 @@
 import Icon from "@mdi/react";
 import { mdiDatabaseClockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAvisos, type Aviso } from "@/components/avisos";
 import { EvolucaoChart } from "@/components/charts/evolucao-chart";
 import { FiltrosBar } from "@/components/filtros/filtros-bar";
-import { ResizableRow } from "@/components/ui/resizable-row";
+import { BarraEdicao } from "@/components/layout/barra-edicao";
+import { BlocoKpis } from "@/components/layout/bloco-kpis";
+import { GradePersonalizavel } from "@/components/layout/grade-personalizavel";
+import { useLayout } from "@/components/layout/use-layout";
 import { Spinner } from "@/components/ui/spinner";
 import { PERIODO_PADRAO } from "@/lib/config";
 import { periodoComparacao } from "@/lib/date";
@@ -19,7 +22,8 @@ import type { DiaVendas, Filtros } from "../types";
 import { CurvaAbc } from "./curva-abc";
 import { DepartamentosBarras } from "./departamentos-barras";
 import { DesempenhoTable } from "./desempenho-table";
-import { KpisVendas } from "./kpis-vendas";
+import { kpisDeVendas } from "./kpis-vendas";
+import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
 import { ProdutosLista } from "./produtos-lista";
 
 type FiltrosEstado = Omit<Filtros, "filiais"> & { filiais: number[] | null };
@@ -124,8 +128,8 @@ export function Vendas() {
   // Avisos vão para o botão de triângulo na barra lateral (popup), não para faixas no topo.
   useAvisos("vendas", avisos);
 
-  // A linha da tabela ocupa o resto da tela, mas deixa as listas de produtos visíveis.
-  const listasRef = useRef<HTMLDivElement>(null);
+  const grade = useLayout("vendas", LAYOUT_PADRAO, LIMITES);
+  const kpis = kpisDeVendas({ resumo, carregando: { vendas: vendasPendentes, cupons: cuponsPendentes } });
   const listas = produtos.data?.listas;
   const produtosCarregando = carregando(produtos);
 
@@ -136,94 +140,109 @@ export function Vendas() {
           <h1 className="text-xl font-bold tracking-tight">Vendas</h1>
           <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             <Icon path={mdiDatabaseClockOutline} size={0.6} aria-hidden />
-            {filiaisQuery.data?.dataMaxima
-              ? `Dados até ${formatData(filiaisQuery.data.dataMaxima)}`
-              : "Carregando…"}
+            {filiaisQuery.data?.dataMaxima ? `Dados até ${formatData(filiaisQuery.data.dataMaxima)}` : "Carregando…"}
           </p>
         </div>
-        {filiaisQuery.data ? (
-          <FiltrosBar
-            filtros={filtros}
-            onChange={(f) => setEstado(f)}
-            filiais={filiaisQuery.data.filiais}
-            dataMinima={filiaisQuery.data.dataMinima}
-            dataMaxima={filiaisQuery.data.dataMaxima}
+        <div className="flex flex-wrap items-end gap-3">
+          {filiaisQuery.data ? (
+            <FiltrosBar
+              filtros={filtros}
+              onChange={(f) => setEstado(f)}
+              filiais={filiaisQuery.data.filiais}
+              dataMinima={filiaisQuery.data.dataMinima}
+              dataMaxima={filiaisQuery.data.dataMaxima}
+            />
+          ) : (
+            <div className="flex h-14 items-center gap-2 text-sm text-muted-foreground">
+              <Spinner className="size-5 text-primary" />
+              Carregando filtros…
+            </div>
+          )}
+          <BarraEdicao
+            grade={grade}
+            rotulos={ROTULOS}
+            rotulosBlocos={{
+              kpis: { titulo: "Indicadores", itens: Object.fromEntries(kpis.map((k) => [k.id, k.titulo])) },
+            }}
           />
-        ) : (
-          <div className="flex h-14 items-center gap-2 text-sm text-muted-foreground">
-            <Spinner className="size-5 text-primary" />
-            Carregando filtros…
-          </div>
-        )}
+        </div>
       </div>
 
-      <KpisVendas resumo={resumo} carregando={{ vendas: vendasPendentes, cupons: cuponsPendentes }} />
-
-      <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-3">
-        <EvolucaoChart
-          titulo="Evolução das Vendas"
-          nomeAtual="Venda atual"
-          cor="var(--chart-1)"
-          formatValor={formatMoeda}
-          formatEixo={formatMoedaCompacta}
-          pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, vendaDe)}
-          carregando={vendasPendentes}
-          alturaGrafico="h-36"
-        />
-        <DepartamentosBarras linhas={departamentos.data?.linhas} carregando={carregando(departamentos)} />
-        <EvolucaoChart
-          titulo="Evolução da Margem Bruta"
-          nomeAtual="Margem atual"
-          cor="var(--chart-5)"
-          formatValor={formatPercentual}
-          formatEixo={(v) => `${Math.round(v)}%`}
-          larguraEixo={44}
-          eixoDesdeZero
-          pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, margemDe)}
-          carregando={vendasPendentes}
-          alturaGrafico="h-36"
-        />
-      </div>
-
-      <ResizableRow
-        storageKey="sgbi:vendas:linha-desempenho"
-        larguraInicial={68}
-        abaixo={listasRef}
-        alturaMinima={240}
-        esquerda={<DesempenhoTable filtros={filtros} totalCupons={totalCupons} />}
-        direita={<CurvaAbc abc={produtos.data?.abc} carregando={produtosCarregando} />}
+      <GradePersonalizavel
+        grade={grade}
+        rotulos={ROTULOS}
+        blocos={["kpis"]}
+        cards={{
+          kpis: <BlocoKpis grade={grade} bloco="kpis" itens={kpis} maxColunas={6} />,
+          "evolucao-vendas": (
+            <EvolucaoChart
+              titulo="Evolução das Vendas"
+              nomeAtual="Venda atual"
+              cor="var(--chart-1)"
+              formatValor={formatMoeda}
+              formatEixo={formatMoedaCompacta}
+              pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, vendaDe)}
+              carregando={vendasPendentes}
+              alturaGrafico="min-h-0 flex-1"
+            />
+          ),
+          departamentos: (
+            <DepartamentosBarras linhas={departamentos.data?.linhas} carregando={carregando(departamentos)} />
+          ),
+          "evolucao-margem": (
+            <EvolucaoChart
+              titulo="Evolução da Margem Bruta"
+              nomeAtual="Margem atual"
+              cor="var(--chart-5)"
+              formatValor={formatPercentual}
+              formatEixo={(v) => `${Math.round(v)}%`}
+              larguraEixo={44}
+              eixoDesdeZero
+              pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, margemDe)}
+              carregando={vendasPendentes}
+              alturaGrafico="min-h-0 flex-1"
+            />
+          ),
+          desempenho: <DesempenhoTable filtros={filtros} totalCupons={totalCupons} />,
+          "curva-abc": <CurvaAbc abc={produtos.data?.abc} carregando={produtosCarregando} />,
+          queda: (
+            <ProdutosLista
+              titulo="Produtos A com maior queda de vendas"
+              descricao="Produtos da classe A (faturamento) com a maior queda % da venda contra o período de comparação."
+              lista="queda"
+              produtos={listas?.queda}
+              carregando={produtosCarregando}
+            />
+          ),
+          crescimento: (
+            <ProdutosLista
+              titulo="Produtos A com maior crescimento de vendas"
+              descricao="Produtos da classe A (faturamento) com o maior crescimento % da venda. Só entram produtos com venda no período de comparação."
+              lista="crescimento"
+              produtos={listas?.crescimento}
+              carregando={produtosCarregando}
+            />
+          ),
+          "maior-margem": (
+            <ProdutosLista
+              titulo="Produtos com maior margem bruta (Classe A e B)"
+              descricao="Produtos das classes A e B (faturamento) com a maior margem bruta no período."
+              lista="maior-margem"
+              produtos={listas?.["maior-margem"]}
+              carregando={produtosCarregando}
+            />
+          ),
+          "menor-margem": (
+            <ProdutosLista
+              titulo="Produtos com menor margem bruta (Classe A e B)"
+              descricao="Produtos das classes A e B (faturamento) com a menor margem bruta no período."
+              lista="menor-margem"
+              produtos={listas?.["menor-margem"]}
+              carregando={produtosCarregando}
+            />
+          ),
+        }}
       />
-
-      <div ref={listasRef} className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-4">
-        <ProdutosLista
-          titulo="Produtos A com maior queda de vendas"
-          descricao="Produtos da classe A (faturamento) com a maior queda % da venda contra o período de comparação."
-          lista="queda"
-          produtos={listas?.queda}
-          carregando={produtosCarregando}
-        />
-        <ProdutosLista
-          titulo="Produtos A com maior crescimento de vendas"
-          descricao="Produtos da classe A (faturamento) com o maior crescimento % da venda. Só entram produtos com venda no período de comparação."
-          lista="crescimento"
-          produtos={listas?.crescimento}
-          carregando={produtosCarregando}
-        />
-        <ProdutosLista
-          titulo="Produtos com maior margem bruta (Classe A e B)"
-          descricao="Produtos das classes A e B (faturamento) com a maior margem bruta no período."
-          lista="maior-margem"
-          produtos={listas?.["maior-margem"]}
-          carregando={produtosCarregando}
-        />
-        <ProdutosLista
-          titulo="Produtos com menor margem bruta (Classe A e B)"
-          descricao="Produtos das classes A e B (faturamento) com a menor margem bruta no período."
-          lista="menor-margem"
-          produtos={listas?.["menor-margem"]}
-          carregando={produtosCarregando}
-        />
-      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { DEBOUNCE_GRAFICO } from "@/components/charts/estilo";
 import { InfoTooltip } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { Area, AreaChart, CartesianGrid, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -53,7 +54,7 @@ function CurvaPlot({
   // Fundo colorido de cada classe no gráfico.
   const faixasX = faixasPorClasse(curva);
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" debounce={DEBOUNCE_GRAFICO}>
       <AreaChart data={curva.curva} margin={{ top: 6, right: 10, bottom: 0, left: 0 }}>
         <CartesianGrid {...propsGrade(detalhado)} />
         {faixasX.map((f) => (

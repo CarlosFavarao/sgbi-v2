@@ -46,3 +46,7 @@ Detalhes técnicos:
 - `cartoes_empresas` é `latin1`: textos com acento não podem ir como literal no SQL junto com colunas dela ("Illegal mix of collations"); o nome padrão do cartão é montado no código.
 - As datas vazias do VX chegam como `0000-00-00` e são tratadas como vazias.
 - Consultas rápidas (tabelas pequenas; cartões agrupados por dia e empresa): menos de 1 s.
+
+## Layout personalizável (D43)
+
+A tela usa a grade personalizável, como o Painel Executivo (ver `docs/painel-executivo-poc.md`, seção 9): o lápis ao lado dos filtros liga a edição (arrastar, trocar de lugar, redimensionar pelas bordas e cantos, ocultar, restaurar o padrão). O layout padrão e os limites de cada card ficam em `src/features/financeiro/layout.ts` (Fluxo de Caixa) e `src/features/financeiro/layout-dfc.ts` (DFC).

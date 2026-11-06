@@ -4,28 +4,27 @@ import Icon from "@mdi/react";
 import { mdiDrag, mdiEyeOffOutline } from "@mdi/js";
 import { Feedback } from "@dnd-kit/dom";
 import { move } from "@dnd-kit/helpers";
-import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react";
+import { DragDropProvider, useDraggable } from "@dnd-kit/react";
 import { motion } from "motion/react";
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
-  alturaDaLinha,
   alturaTotal,
   COLUNAS,
-  encaixe,
-  espacosLivres,
-  faixaDeRedimensionamento,
+  encontrar,
   limitesDe,
-  trocaVisual,
+  posicionar,
+  semMoverArrastado,
+  trocar,
   type Borda,
   type ItemLayout,
-  type LinhaLayout,
+  type Layout,
 } from "@/lib/layout";
 import { AlcaBorda, pararArraste } from "./alca-borda";
 import { animarDesde, animarSaida, MOLA, MOLA_PREVIA } from "./movimento";
-import { NOVA_LINHA, type LayoutTela } from "./use-layout";
+import type { LayoutTela } from "./use-layout";
 
-/** Espaço entre cards e entre linhas (gap-2.5). */
+/** Espaço entre cards (gap-2.5). */
 export const GAP = 10;
 /** Altura mínima de uma unidade de linha (px): em telas baixas a página rola. */
 const UNIDADE_MINIMA = 30;
@@ -33,6 +32,8 @@ const UNIDADE_MINIMA = 30;
 const UNIDADE_EMPILHADA = 40;
 /** Padding inferior da página. */
 const MARGEM_INFERIOR = 12;
+/** Linhas vazias a mais no fim da grade durante a edição (espaço para soltar cards embaixo de tudo). */
+const LINHAS_EXTRAS = 4;
 /** Larguras e alturas (px) abaixo das quais o card avisa o conteúdo para se compactar. */
 const ESTREITO_PX = 380;
 const BAIXO_PX = 230;
@@ -87,22 +88,24 @@ const NOME_BORDA: Record<Borda, string> = {
 };
 
 /**
- * O que acontece ao soltar o card arrastado: cair numa linha (`null` = linha
- * nova) e colunas, ou trocar de lugar com o card que está sob o ponteiro.
+ * O que acontece ao soltar o card arrastado: ir para a célula (`x`, `y`) ou
+ * trocar de lugar com o card que está sob o ponteiro.
  */
-export type Previa =
-  | { tipo: "posicao"; id: string; linha: string | null; x: number; w: number; h: number }
-  | { tipo: "troca"; id: string; com: string };
+export type Previa = { tipo: "posicao"; id: string; x: number; y: number } | { tipo: "troca"; id: string; com: string };
 
 /** Card que acabou de ser solto e a caixa (na tela) de onde ele parte. */
 type Solto = { id: string; de: DOMRect };
 
 /** Tamanho ao vivo durante o redimensionamento: o card segue o ponteiro em px. */
-type AoVivo = { largura: number; altura: number; ancoraDireita: boolean };
+type AoVivo = { largura: number; altura: number; ancoraDireita: boolean; ancoraBaixo: boolean };
+
+const posicaoNaGrade = (i: { x: number; y: number; w: number; h: number }) => ({
+  gridColumn: `${i.x + 1} / span ${i.w}`,
+  gridRow: `${i.y + 1} / span ${i.h}`,
+});
 
 function CardDaGrade({
   item,
-  linha,
   grade,
   rotulo,
   unidade,
@@ -112,7 +115,6 @@ function CardDaGrade({
   children,
 }: {
   item: ItemLayout;
-  linha: LinhaLayout;
   grade: LayoutTela;
   rotulo: string;
   unidade: number;
@@ -122,19 +124,13 @@ function CardDaGrade({
   solto: Solto | null;
   children: ReactNode;
 }) {
-  const { editando, layout, limites } = grade;
+  const { editando, limites } = grade;
   const travar = editando && !bloco;
-  const { ref, handleRef, isDragging } = useDraggable({
-    id: item.id,
-    type: "card",
-    data: { linha: linha.id },
-    disabled: !editando,
-  });
+  const { ref, handleRef, isDragging } = useDraggable({ id: item.id, type: "card", disabled: !editando });
   const elRef = useRef<HTMLDivElement | null>(null);
-  const inicio = useRef<{ x: number; w: number; h: number; ret: DOMRect } | null>(null);
+  const inicio = useRef<{ x: number; y: number; w: number; h: number; ret: DOMRect } | null>(null);
   const [aoVivo, setAoVivo] = useState<AoVivo | null>(null);
   const acabouDeCair = solto?.id === item.id;
-  const animarLayout = !isDragging && !acabouDeCair;
 
   // O card solto sai de onde foi largado e desliza (mola) até o lugar novo.
   useLayoutEffect(() => {
@@ -148,40 +144,56 @@ function CardDaGrade({
 
   const iniciar = (borda: Borda) => {
     const ret = elRef.current!.getBoundingClientRect();
-    inicio.current = { x: item.x, w: item.w, h: item.h, ret };
-    setAoVivo({ largura: ret.width, altura: ret.height, ancoraDireita: borda.includes("l") });
+    inicio.current = { x: item.x, y: item.y, w: item.w, h: item.h, ret };
+    setAoVivo({
+      largura: ret.width,
+      altura: ret.height,
+      ancoraDireita: borda.includes("l"),
+      ancoraBaixo: borda.includes("t"),
+    });
   };
 
   /** Novo tamanho a partir do deslocamento da borda, em colunas e linhas. */
-  const aplicar = (borda: Borda, colunas: number, linhas: number, base: { x: number; w: number; h: number }) => {
-    const x = borda.includes("l") ? base.x + colunas : base.x;
-    const w = borda.includes("l") ? base.w - colunas : borda.includes("r") ? base.w + colunas : base.w;
-    // A linha não sobe: puxar a borda de cima para cima também aumenta a altura (o card cresce para baixo).
-    const h = borda.includes("t") ? base.h - linhas : borda.includes("b") ? base.h + linhas : base.h;
-    if (x !== item.x || w !== item.w || h !== item.h) grade.redimensionar(item.id, { x, w, h }, borda);
+  const aplicar = (
+    borda: Borda,
+    colunas: number,
+    linhas: number,
+    base: { x: number; y: number; w: number; h: number },
+  ) => {
+    const esq = borda.includes("l");
+    const cima = borda.includes("t");
+    grade.redimensionar(
+      item.id,
+      {
+        x: esq ? base.x + colunas : base.x,
+        y: cima ? base.y + linhas : base.y,
+        w: esq ? base.w - colunas : borda.includes("r") ? base.w + colunas : base.w,
+        h: cima ? base.h - linhas : borda.includes("b") ? base.h + linhas : base.h,
+      },
+      borda,
+    );
   };
 
   // O card acompanha o ponteiro em px (dentro dos limites); a grade encaixa na coluna/linha mais próxima.
   const mover = (borda: Borda) => (dx: number, dy: number) => {
     const i = inicio.current;
-    const faixa = faixaDeRedimensionamento(layout, item.id, limites);
-    if (!i || !faixa) return;
-    const origemLinha = i.ret.left - i.x * passo.x;
-    const larguraMin = lim.min.w * coluna + (lim.min.w - 1) * GAP;
-    let largura = i.ret.width;
-    if (borda.includes("l")) {
-      const esq = Math.min(Math.max(i.ret.left + dx, origemLinha + faixa.esquerda * passo.x), i.ret.right - larguraMin);
-      largura = i.ret.right - esq;
-    } else if (borda.includes("r")) {
-      const dir = Math.max(
-        Math.min(i.ret.right + dx, origemLinha + faixa.direita * passo.x - GAP),
-        i.ret.left + larguraMin,
-      );
-      largura = dir - i.ret.left;
-    }
+    if (!i) return;
+    const px = (w: number) => w * coluna + (w - 1) * GAP;
+    // Até a borda da grade: pela esquerda, até a coluna 0; pela direita, até a 12.
+    const maxW = borda.includes("l")
+      ? Math.min(lim.max.w, i.x + i.w)
+      : borda.includes("r")
+        ? Math.min(lim.max.w, COLUNAS - i.x)
+        : i.w;
+    const maxH = borda.includes("t") ? Math.min(lim.max.h, i.y + i.h) : lim.max.h;
+    const dw = borda.includes("l") ? -dx : borda.includes("r") ? dx : 0;
     const dh = borda.includes("t") ? -dy : borda.includes("b") ? dy : 0;
-    const altura = Math.min(Math.max(i.ret.height + dh, alturaPx(lim.min.h, unidade)), alturaPx(lim.max.h, unidade));
-    setAoVivo({ largura, altura, ancoraDireita: borda.includes("l") });
+    setAoVivo({
+      largura: Math.min(Math.max(i.ret.width + dw, px(lim.min.w)), px(maxW)),
+      altura: Math.min(Math.max(i.ret.height + dh, alturaPx(lim.min.h, unidade)), alturaPx(maxH, unidade)),
+      ancoraDireita: borda.includes("l"),
+      ancoraBaixo: borda.includes("t"),
+    });
     aplicar(borda, Math.round(dx / passo.x), Math.round(dy / passo.y), i);
   };
 
@@ -198,26 +210,23 @@ function CardDaGrade({
       }}
       // Posição e tamanho animam com mola (Motion). O card arrastado é movido pelo dnd-kit e o recém-solto
       // anima à parte (`animarDesde`): os dois ficam fora da animação de layout.
-      layout={animarLayout}
-      layoutId={animarLayout ? `card-${item.id}` : undefined}
+      layout={!isDragging && !acabouDeCair}
       transition={MOLA}
       data-card={item.id}
-      style={{ gridColumn: `${item.x + 1} / span ${item.w}`, gridRow: 1, height: alturaCard }}
-      className={`relative min-w-0 ${isDragging ? "z-40" : aoVivo ? "z-30" : ""}`}
+      style={posicaoNaGrade(item)}
+      className={`relative min-h-0 min-w-0 ${isDragging ? "z-40" : aoVivo ? "z-30" : "z-10"}`}
     >
       {/* Durante o redimensionamento: onde o card vai encaixar. */}
       {aoVivo && <div aria-hidden className="absolute inset-0 rounded-2xl bg-primary/[0.06] ring-1 ring-primary/25" />}
-      <motion.div
-        layout={animarLayout}
-        transition={MOLA}
+      <div
         style={
           aoVivo
             ? {
                 position: "absolute",
-                top: 0,
                 width: aoVivo.largura,
                 height: aoVivo.altura,
                 ...(aoVivo.ancoraDireita ? { right: 0 } : { left: 0 }),
+                ...(aoVivo.ancoraBaixo ? { bottom: 0 } : { top: 0 }),
               }
             : undefined
         }
@@ -297,110 +306,23 @@ function CardDaGrade({
             ))}
           </div>
         )}
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
 
-function Linha({
-  linha,
-  grade,
-  cards,
-  rotulos,
-  unidade,
-  coluna,
-  blocos,
-  previa,
-  solto,
-}: {
-  linha: LinhaLayout;
-  grade: LayoutTela;
-  blocos: string[];
-  cards: Record<string, ReactNode>;
-  rotulos: Record<string, string>;
-  unidade: number;
-  coluna: number;
-  previa: Previa | null;
-  solto: Solto | null;
-}) {
-  const { editando } = grade;
-  const { ref } = useDroppable({ id: linha.id, type: "linha", accept: "card", disabled: !editando });
-  const visiveis = linha.itens.filter((i) => i.visivel);
-  if (!visiveis.length && !editando) return null;
-  const altura = alturaPx(Math.max(alturaDaLinha(linha), 2), unidade);
-  const aqui = previa?.tipo === "posicao" && previa.linha === linha.id ? previa : null;
-
-  return (
-    <div ref={ref} data-linha={linha.id} className="grid grid-cols-12 items-start gap-2.5">
-      {/* Espaços vazios da linha: só aparecem na edição (o usuário decide se preenche). */}
-      {editando &&
-        espacosLivres(linha).map((t) => (
-          <div
-            key={`livre-${t.inicio}`}
-            aria-hidden
-            style={{ gridColumn: `${t.inicio + 1} / ${t.fim + 1}`, gridRow: 1, height: altura }}
-            className="flex items-center justify-center rounded-2xl bg-secondary/40 text-xs text-muted-foreground/80 ring-1 ring-border/60 dark:bg-secondary/20"
-          >
-            {t.fim - t.inicio} {t.fim - t.inicio === 1 ? "coluna livre" : "colunas livres"}
-          </div>
-        ))}
-      {visiveis.map((item) => (
-        <CardDaGrade
-          key={item.id}
-          item={item}
-          linha={linha}
-          grade={grade}
-          rotulo={rotulos[item.id] ?? item.id}
-          unidade={unidade}
-          coluna={coluna}
-          bloco={blocos.includes(item.id)}
-          solto={solto}
-        >
-          {cards[item.id]}
-        </CardDaGrade>
-      ))}
-      {/* Onde o card arrastado vai cair: a moldura desliza de um lugar para outro. */}
-      {aqui && (
-        <motion.div
-          layoutId="previa-posicao"
-          transition={MOLA_PREVIA}
-          aria-hidden
-          style={{ gridColumn: `${aqui.x + 1} / span ${aqui.w}`, gridRow: 1, height: alturaPx(aqui.h, unidade) }}
-          className="z-20 rounded-2xl bg-primary/10 ring-2 ring-primary/40"
-        />
-      )}
-    </div>
-  );
-}
-
-function NovaLinha({ editando, ativa }: { editando: boolean; ativa: boolean }) {
-  const { ref } = useDroppable({ id: NOVA_LINHA, type: "linha", accept: "card", disabled: !editando });
-  if (!editando) return null;
-  return (
-    <div
-      ref={ref}
-      className={`flex h-14 items-center justify-center rounded-2xl text-xs ring-1 transition-colors duration-200 ${
-        ativa ? "bg-primary/10 text-primary ring-primary/40" : "bg-secondary/30 text-muted-foreground ring-border/60"
-      }`}
-    >
-      Solte um card aqui para criar uma linha
-    </div>
-  );
-}
-
-type Operacao = {
-  source: { id: string | number; type?: unknown } | null;
-  target: { id: string | number } | null;
-  position: { current: { x: number; y: number } };
-};
+type Operacao = { source: { id: string | number; type?: unknown } | null };
 
 /**
- * Grade personalizável da tela (D43): linhas de 12 colunas; cada card tem coluna
- * de início e largura, e espaços vazios são permitidos em qualquer ponto. No
- * modo de edição (`BarraEdicao`) os cards são arrastados por qualquer ponto
- * (dnd-kit), redimensionados pelas quatro bordas e cantos e ocultados. Soltar
- * sobre outro card troca os dois de lugar (o outro já desliza durante o
- * arraste); soltar num espaço vazio posiciona o card ali. Animações com Motion.
+ * Grade personalizável da tela (D43): 12 colunas e linhas de altura fixa; cada
+ * card tem posição (`x`, `y`) e tamanho (`w`, `h`). No modo de edição
+ * (`BarraEdicao`) os cards são arrastados por qualquer ponto (dnd-kit),
+ * redimensionados pelas quatro bordas e cantos e ocultados. Soltar sobre outro
+ * card troca os dois de lugar; soltar num espaço vazio leva o card para aquela
+ * coluna. Quem ficar por baixo desce e, em seguida, todos sobem até encostar no
+ * card de cima, sem mudar de tamanho (os outros cards já se movem durante o
+ * arraste). Animações com Motion; todos os
+ * cards ficam num container só (mover não recria o card nem os gráficos dele).
  * Abaixo de `xl` os cards empilham, na ordem, sem edição.
  */
 export function GradePersonalizavel({
@@ -421,40 +343,64 @@ export function GradePersonalizavel({
   const larga = grade.larga;
   const unidade = useUnidade(ref, alturaTotal(grade.padrao));
   const coluna = useColuna(ref);
-  const { layout } = grade;
+  const { layout, limites, editando } = grade;
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [solto, setSolto] = useState<Solto | null>(null);
-  // Distância do ponteiro até o canto do card no início do arraste (o card cai alinhado ao que se vê).
+  // Distância do ponteiro até o canto do card ao pegá-lo (o card cai alinhado ao que se vê). Medida no
+  // pointerdown, antes de o dnd-kit tirar o card do fluxo.
   const pegada = useRef({ x: 0, y: 0 });
+  // Posição do ponteiro na tela, acompanhada pela janela durante a edição (a do dnd-kit não vem em
+  // coordenadas da tela).
+  const ponteiro = useRef({ x: 0, y: 0 });
+  useLayoutEffect(() => {
+    if (!editando) return;
+    const acompanhar = (e: PointerEvent) => {
+      ponteiro.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener("pointermove", acompanhar, { capture: true, passive: true });
+    window.addEventListener("pointerdown", acompanhar, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener("pointermove", acompanhar, { capture: true });
+      window.removeEventListener("pointerdown", acompanhar, { capture: true });
+    };
+  }, [editando]);
   // Caixas dos cards no início do arraste (coordenadas da página): a troca usa estas, e não as da tela,
-  // porque o outro card já desliza para o lugar novo durante o arraste.
+  // porque os outros cards já se movem durante o arraste.
   const caixas = useRef(new Map<string, { esquerda: number; topo: number; direita: number; base: number }>());
 
-  // Durante a troca, o outro card já aparece no lugar novo.
-  const exibido = useMemo(
-    () => (previa?.tipo === "troca" ? trocaVisual(layout, previa.id, previa.com) : layout),
-    [layout, previa],
-  );
+  const resultadoDe = (p: Previa | null): Layout | null => {
+    if (!p) return null;
+    return p.tipo === "troca" ? trocar(layout, p.id, p.com, limites) : posicionar(layout, p.id, p.x, p.y, limites);
+  };
 
-  const calcularPrevia = ({ source, target, position }: Operacao): Previa | null => {
+  // Durante o arraste, os outros cards já aparecem onde vão ficar; o arrastado continua na origem.
+  const depois = resultadoDe(previa);
+  const exibido = depois && previa ? semMoverArrastado(layout, depois, previa.id) : layout;
+  const fantasma = depois && previa ? (encontrar(depois, previa.id) ?? null) : null;
+
+  const calcularPrevia = ({ source }: Operacao): Previa | null => {
     if (source?.type !== "card") return null;
     const id = String(source.id);
-    const atual = layout.linhas.flatMap((l) => l.itens).find((i) => i.id === id);
-    if (!atual) return null;
-    const px = position.current.x + window.scrollX;
-    const py = position.current.y + window.scrollY;
+    const atual = encontrar(layout, id);
+    const el = ref.current;
+    if (!atual || !el) return null;
+    const { x: cx, y: cy } = ponteiro.current;
+    const px = cx + window.scrollX;
+    const py = cy + window.scrollY;
     for (const [outro, c] of caixas.current) {
       if (outro !== id && px >= c.esquerda && px <= c.direita && py >= c.topo && py <= c.base) {
         return { tipo: "troca", id, com: outro };
       }
     }
-    if (!target) return null;
-    if (target.id === NOVA_LINHA) return { tipo: "posicao", id, linha: null, x: 0, w: atual.w, h: atual.h };
-    const el = ref.current?.querySelector<HTMLElement>(`[data-linha="${String(target.id)}"]`);
-    if (!el) return null;
-    const esquerda = position.current.x - pegada.current.x - el.getBoundingClientRect().left;
-    const lugar = encaixe(layout, String(target.id), id, Math.round(esquerda / (coluna + GAP)), grade.limites);
-    return lugar ? { tipo: "posicao", id, linha: String(target.id), ...lugar, h: atual.h } : null;
+    const r = el.getBoundingClientRect();
+    const x = Math.round((cx - pegada.current.x - r.left) / (coluna + GAP));
+    const y = Math.round((cy - pegada.current.y - r.top) / (unidade + GAP));
+    return {
+      tipo: "posicao",
+      id,
+      x: Math.min(Math.max(x, 0), COLUNAS - atual.w),
+      y: Math.max(y, 0),
+    };
   };
 
   const atualizarPrevia = (operacao: Operacao) => {
@@ -462,63 +408,68 @@ export function GradePersonalizavel({
     setPrevia((p) => (JSON.stringify(p) === JSON.stringify(nova) ? p : nova));
   };
 
+  const visiveis = exibido.itens.filter((i) => i.visivel);
+
+  /** Ao pegar um card: onde o ponteiro está nele e as caixas de todos os cards (para a troca). */
+  const aoPegar = (e: React.PointerEvent) => {
+    if (!editando) return;
+    const card = (e.target as HTMLElement).closest<HTMLElement>("[data-card]");
+    if (!card || !ref.current?.contains(card)) return;
+    const ret = card.getBoundingClientRect();
+    pegada.current = { x: e.clientX - ret.left, y: e.clientY - ret.top };
+    caixas.current = new Map();
+    ref.current.querySelectorAll<HTMLElement>("[data-card]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      caixas.current.set(el.dataset.card!, {
+        esquerda: r.left + window.scrollX,
+        topo: r.top + window.scrollY,
+        direita: r.right + window.scrollX,
+        base: r.bottom + window.scrollY,
+      });
+    });
+  };
+
   if (!larga) {
     return (
       <div ref={ref} className="flex flex-col gap-2.5">
-        {layout.linhas.flatMap((l) =>
-          l.itens
-            .filter((i) => i.visivel)
-            .map((i) => (
-              // Blocos (KPIs) ficam com a altura do conteúdo; os outros cards, com altura fixa.
-              <div
-                key={i.id}
-                style={blocos.includes(i.id) ? undefined : { height: alturaPx(i.h, UNIDADE_EMPILHADA) }}
-                className={blocos.includes(i.id) ? "" : "*:h-full"}
-              >
-                {cards[i.id]}
-              </div>
-            )),
-        )}
+        {[...visiveis]
+          .sort((a, b) => a.y - b.y || a.x - b.x)
+          .map((i) => (
+            // Blocos (KPIs) ficam com a altura do conteúdo; os outros cards, com altura fixa.
+            <div
+              key={i.id}
+              style={blocos.includes(i.id) ? undefined : { height: alturaPx(i.h, UNIDADE_EMPILHADA) }}
+              className={blocos.includes(i.id) ? "" : "*:h-full"}
+            >
+              {cards[i.id]}
+            </div>
+          ))}
       </div>
     );
   }
+
+  // Na edição, a grade mostra as células (e algumas linhas vazias a mais, para soltar embaixo de tudo).
+  const linhas = alturaTotal(exibido) + (editando ? LINHAS_EXTRAS : 0);
 
   return (
     <DragDropProvider
       // Sem a animação de volta do dnd-kit: o card solto desliza (Motion) até o lugar novo.
       plugins={(padrao) => [...padrao, Feedback.configure({ dropAnimation: null })]}
-      onDragStart={(event) => {
-        const { source, position } = event.operation;
-        const ret = source?.element?.getBoundingClientRect();
-        if (ret) pegada.current = { x: position.current.x - ret.left, y: position.current.y - ret.top };
-        caixas.current = new Map();
-        ref.current?.querySelectorAll<HTMLElement>("[data-card]").forEach((el) => {
-          const r = el.getBoundingClientRect();
-          caixas.current.set(el.dataset.card!, {
-            esquerda: r.left + window.scrollX,
-            topo: r.top + window.scrollY,
-            direita: r.right + window.scrollX,
-            base: r.bottom + window.scrollY,
-          });
-        });
-      }}
-      // O alvo (linha) só muda no `dragover`, depois do `dragmove`: a prévia é calculada nos dois.
       onDragMove={(event) => atualizarPrevia(event.operation)}
-      onDragOver={(event) => atualizarPrevia(event.operation)}
       onDragEnd={(event) => {
         const { source } = event.operation;
-        // Recalcula com o alvo final (o estado da prévia pode estar um evento atrás).
+        // Recalcula com a posição final (o estado da prévia pode estar um evento atrás).
         const destino = event.canceled ? null : calcularPrevia(event.operation);
         setPrevia(null);
         if (!source) return;
         if (source.type === "card") {
           const de = source.element?.getBoundingClientRect();
-          if (destino && de) {
+          const depois = resultadoDe(destino);
+          if (depois && de) {
             setSolto({ id: String(source.id), de });
             window.setTimeout(() => setSolto(null), DURACAO_SOLTO);
+            grade.substituir(depois);
           }
-          if (destino?.tipo === "troca") grade.trocar(destino.id, destino.com);
-          else if (destino) grade.posicionar(destino.id, destino.linha, destino.x);
         } else if (!event.canceled && source.type === "item-bloco") {
           const bloco = String((source.data as { bloco?: string }).bloco);
           const ids = (layout.blocos[bloco] ?? []).filter((i) => i.visivel).map((i) => i.id);
@@ -526,22 +477,46 @@ export function GradePersonalizavel({
         }
       }}
     >
-      <div ref={ref} className="flex flex-col gap-2.5">
-        {exibido.linhas.map((linha) => (
-          <Linha
-            key={linha.id}
-            linha={linha}
+      <div
+        ref={ref}
+        onPointerDownCapture={aoPegar}
+        className="relative grid"
+        style={{ gridTemplateColumns: `repeat(${COLUNAS}, minmax(0, 1fr))`, gridAutoRows: `${unidade}px`, gap: GAP }}
+      >
+        {/* Células da grade na edição (referência para encaixar e espaço para soltar). */}
+        {editando &&
+          Array.from({ length: linhas * COLUNAS }, (_, n) => (
+            <div
+              key={`celula-${n}`}
+              aria-hidden
+              style={{ gridColumn: (n % COLUNAS) + 1, gridRow: Math.floor(n / COLUNAS) + 1 }}
+              className="rounded-lg bg-secondary/35 dark:bg-secondary/15"
+            />
+          ))}
+        {visiveis.map((item) => (
+          <CardDaGrade
+            key={item.id}
+            item={item}
             grade={grade}
-            cards={cards}
-            rotulos={rotulos}
+            rotulo={rotulos[item.id] ?? item.id}
             unidade={unidade}
             coluna={coluna}
-            blocos={blocos}
-            previa={previa}
+            bloco={blocos.includes(item.id)}
             solto={solto}
-          />
+          >
+            {cards[item.id]}
+          </CardDaGrade>
         ))}
-        <NovaLinha editando={grade.editando} ativa={previa?.tipo === "posicao" && previa.linha === null} />
+        {/* Onde o card arrastado vai cair: a moldura desliza de uma célula para outra. */}
+        {fantasma && (
+          <motion.div
+            layout
+            transition={MOLA_PREVIA}
+            aria-hidden
+            style={posicaoNaGrade(fantasma)}
+            className="z-20 rounded-2xl bg-primary/10 ring-2 ring-primary/40"
+          />
+        )}
       </div>
     </DragDropProvider>
   );

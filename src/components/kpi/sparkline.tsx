@@ -1,5 +1,6 @@
 "use client";
 
+import { DEBOUNCE_GRAFICO } from "@/components/charts/estilo";
 import {
   Area,
   AreaChart,
@@ -62,7 +63,7 @@ function SerieDetalhada({
     </>
   );
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" debounce={DEBOUNCE_GRAFICO}>
       {kind === "bar" ? (
         <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
           {eixos}
@@ -122,7 +123,7 @@ export function Sparkline({
       detalhe={<SerieDetalhada data={data} kind={kind} color={color} format={format} formatEixo={eixo} />}
     >
       <div className="size-full" role="img" aria-label={`${label}: evolução diária`}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" debounce={DEBOUNCE_GRAFICO}>
           {kind === "bar" ? (
             <BarChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }} barCategoryGap={1}>
               {tooltipSerie(kind, format)}
