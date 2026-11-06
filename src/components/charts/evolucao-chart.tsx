@@ -173,9 +173,12 @@ export function EvolucaoChart({
       <CardHeader>
         <div>
           <CardTitle>{titulo}</CardTitle>
-          <LegendaGrafico itens={legenda} />
+          <div className="[[data-baixo]_&]:hidden">
+            <LegendaGrafico itens={legenda} />
+          </div>
         </div>
-        {seletor}
+        {/* Card estreito: o agrupamento fica só na janela ampliada (clique no gráfico). */}
+        <div className="[[data-estreito]_&]:hidden">{seletor}</div>
       </CardHeader>
 
       <ExpandirGrafico

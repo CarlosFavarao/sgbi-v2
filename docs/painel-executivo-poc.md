@@ -156,3 +156,20 @@ Limitações conhecidas:
 - A tabela troca de nível pelas abas, mas ainda não expande um departamento em seus grupos.
 - Não há dados do dia (`API_VIEW`); a tela usa só dias fechados.
 - `PERIODO_PADRAO` está fixo em julho/2026 por causa da homologação.
+
+## 9. Layout personalizável (06/11/2026, D43)
+
+O lápis ao lado dos filtros liga o modo de edição (só em telas de 1280 px ou mais):
+
+- **Animações (Motion):** molas suaves, sem quique (cerca de 0,55 s). Ao passar um card sobre outro, o de baixo já desliza para o lugar de onde o arrastado saiu; se o ponteiro sair, ele volta. O card solto desliza do ponto onde foi largado até o lugar final. Ao redimensionar, o próprio card acompanha o ponteiro e encaixa na coluna ou linha mais próxima ao soltar. Quem configurou "reduzir movimento" no sistema não vê os movimentos.
+- **Visual da edição:** cada card ganha uma borda sólida e suave (mais forte ao passar o mouse), sem fundo colorido nem linha pontilhada; espaços livres aparecem em cinza claro.
+- **Arrastar** por qualquer ponto do card: uma moldura azul mostra onde ele vai cair. Ele cai na coluna em que foi solto, dentro do espaço livre mais próximo (encolhendo até o mínimo, se preciso); linha sem espaço para a largura mínima não aceita o card. "Solte um card aqui para criar uma linha" cria uma linha nova.
+- **Trocar de lugar:** soltar um card em cima de outro troca os dois (o de baixo mostra "Trocar de lugar"). Cada um mantém o tamanho; o que não couber no lugar do outro vai para uma linha nova logo abaixo (o aviso aparece antes de soltar).
+- **Redimensionar** pelas quatro bordas e pelos quatro cantos. As bordas esquerda e direita mudam a largura (a oposta fica parada), até encostar no vizinho ou no limite do card. As bordas de cima e de baixo mudam a altura (a linha não sobe: puxar a de cima para cima também aumenta o card, para baixo). Pelo teclado, setas com a alça em foco. O tamanho aparece no canto ("4 × 6").
+- **Ocultar** pelo olho; os ocultos voltam pela lista "Ocultos", no lugar de antes se ainda houver espaço. O espaço fica vazio onde o card estava (visível na edição como "N colunas livres").
+- **KPIs:** dentro do bloco Indicadores, o KPI inteiro é a alça de arrastar; as bordas esquerda e direita mudam a largura (1 a 3 colunas) e o olho oculta. As colunas do bloco dependem da largura dele (até 5).
+- **Cards pequenos:** o conteúdo se adapta em vez de vazar. KPI baixo esconde o comparativo e o minigráfico; muito baixo, mostra título e valor na mesma linha (e o bloco rola se ainda não couber); KPI estreito esconde o minigráfico. Gráfico estreito esconde o seletor de agrupamento (ele continua na janela ampliada); baixo, esconde a legenda. A tabela estreita esconde a busca.
+- **Restaurar padrão** volta à disposição, aos tamanhos e à visibilidade originais.
+
+Layout padrão e limites em `src/features/painel-executivo/layout.ts`; funções puras em `src/lib/layout.ts`; componentes em `src/components/layout/` (`useLayout`, `GradePersonalizavel`, `BlocoKpis`, `BarraEdicao`). O layout fica no `localStorage` (`sgbi:layout:painel-executivo:v1`). Mudou ids ou estrutura do padrão: suba a `versao` (o salvo antigo é descartado). Pendências: P57 (salvar por usuário) e P58 (outras telas).
+

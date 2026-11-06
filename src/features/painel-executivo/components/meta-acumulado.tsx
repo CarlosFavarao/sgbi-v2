@@ -22,7 +22,7 @@ export function MetaAcumulado({
       <CardHeader>
         <div>
           <CardTitle>Venda vs Meta (acumulado)</CardTitle>
-          <CardDescription>
+          <CardDescription className="[[data-baixo]_&]:hidden">
             {meta ? `Mês de ${formatMesAno(meta.mes)} até o fim do período` : "Mês do fim do período"}
           </CardDescription>
         </div>
@@ -66,7 +66,7 @@ export function MetaAcumulado({
             >
               <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(atingido, 100)}%` }} />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 [[data-baixo]_&]:hidden [[data-estreito]_&]:grid-cols-1">
               <div className="flex items-center gap-2 rounded-xl border p-2">
                 <Icon path={mdiChartBar} size={1.1} className="text-primary" aria-hidden />
                 <div>

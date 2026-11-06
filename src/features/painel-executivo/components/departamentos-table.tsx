@@ -132,7 +132,7 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
         </CardTitle>
         <div className="flex flex-wrap items-center gap-3">
           <Segmented label="Nível" value={nivel} options={NIVEIS} onChange={setNivel} />
-          <label className="relative">
+          <label className="relative [[data-estreito]_&]:hidden">
             <span className="sr-only">Buscar {rotuloNivel.toLowerCase()}</span>
             <Icon
               path={mdiMagnify}

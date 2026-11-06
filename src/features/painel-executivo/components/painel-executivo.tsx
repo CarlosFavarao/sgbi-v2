@@ -5,7 +5,10 @@ import { mdiDatabaseClockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useAvisos } from "@/components/avisos";
-import { ResizableRow } from "@/components/ui/resizable-row";
+import { BarraEdicao } from "@/components/layout/barra-edicao";
+import { BlocoKpis } from "@/components/layout/bloco-kpis";
+import { GradePersonalizavel } from "@/components/layout/grade-personalizavel";
+import { useLayout } from "@/components/layout/use-layout";
 import { Spinner } from "@/components/ui/spinner";
 import {
   alertas as gerarAlertas,
@@ -26,7 +29,8 @@ import { DepartamentosTable } from "./departamentos-table";
 import { EvolucaoChart } from "@/components/charts/evolucao-chart";
 import { evolucaoComparativa } from "@/lib/serie";
 import { FiltrosBar } from "@/components/filtros/filtros-bar";
-import { KpiGrid } from "./kpi-grid";
+import { kpisDoPainel } from "./kpi-grid";
+import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
 import { MetaAcumulado } from "./meta-acumulado";
 
 type FiltrosEstado = Omit<Filtros, "filiais"> & { filiais: number[] | null };
@@ -58,8 +62,7 @@ export function PainelExecutivo() {
   const departamentos = useQuery(painelQueries.departamentos(filtros, "departamento"));
 
   // Carregando = primeira carga ou troca de filtro (dados anteriores ficam cobertos).
-  const carregando = (q: { isPending: boolean; isPlaceholderData: boolean }) =>
-    q.isPending || q.isPlaceholderData;
+  const carregando = (q: { isPending: boolean; isPlaceholderData: boolean }) => q.isPending || q.isPlaceholderData;
   const fontesCarregando = {
     vendas: carregando(vendas),
     pdv: carregando(pdv),
@@ -73,16 +76,12 @@ export function PainelExecutivo() {
     [filtros.periodo, filtros.comparacao],
   );
   const resumo = useMemo(
-    () =>
-      combinarSeries(filtros.periodo, periodoAnterior, [vendas.data, pdv.data, cancelamentos.data, despesas.data]),
+    () => combinarSeries(filtros.periodo, periodoAnterior, [vendas.data, pdv.data, cancelamentos.data, despesas.data]),
     [filtros.periodo, periodoAnterior, vendas.data, pdv.data, cancelamentos.data, despesas.data],
   );
 
   const alertasCarregando =
-    fontesCarregando.vendas ||
-    fontesCarregando.despesas ||
-    fontesCarregando.cancelamentos ||
-    carregando(departamentos);
+    fontesCarregando.vendas || fontesCarregando.despesas || fontesCarregando.cancelamentos || carregando(departamentos);
 
   const listaAlertas = useMemo(() => {
     if (alertasCarregando || !departamentos.data) return [];
@@ -134,6 +133,9 @@ export function PainelExecutivo() {
       : []),
   ]);
 
+  const grade = useLayout("painel-executivo", LAYOUT_PADRAO, LIMITES);
+  const kpis = kpisDoPainel({ resumo, meta: meta.data, carregando: fontesCarregando });
+
   return (
     <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-2.5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -142,66 +144,71 @@ export function PainelExecutivo() {
           <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             {/* Subtítulo curto: título e filtros cabem na mesma linha. */}
             <Icon path={mdiDatabaseClockOutline} size={0.6} aria-hidden />
-            {filiaisQuery.data?.dataMaxima
-              ? `Dados até ${formatData(filiaisQuery.data.dataMaxima)}`
-              : "Carregando…"}
+            {filiaisQuery.data?.dataMaxima ? `Dados até ${formatData(filiaisQuery.data.dataMaxima)}` : "Carregando…"}
           </p>
         </div>
-        {filiaisQuery.data ? (
-          <FiltrosBar
-            filtros={filtros}
-            onChange={(f) => setEstado(f)}
-            filiais={filiaisQuery.data.filiais}
-            dataMinima={filiaisQuery.data.dataMinima}
-            dataMaxima={filiaisQuery.data.dataMaxima}
+        <div className="flex flex-wrap items-end gap-3">
+          {filiaisQuery.data ? (
+            <FiltrosBar
+              filtros={filtros}
+              onChange={(f) => setEstado(f)}
+              filiais={filiaisQuery.data.filiais}
+              dataMinima={filiaisQuery.data.dataMinima}
+              dataMaxima={filiaisQuery.data.dataMaxima}
+            />
+          ) : (
+            <div className="flex h-14 items-center gap-2 text-sm text-muted-foreground">
+              <Spinner className="size-5 text-primary" />
+              Carregando filtros…
+            </div>
+          )}
+          <BarraEdicao
+            grade={grade}
+            rotulos={ROTULOS}
+            rotulosBlocos={{
+              kpis: { titulo: "Indicadores", itens: Object.fromEntries(kpis.map((k) => [k.id, k.titulo])) },
+            }}
           />
-        ) : (
-          <div className="flex h-14 items-center gap-2 text-sm text-muted-foreground">
-            <Spinner className="size-5 text-primary" />
-            Carregando filtros…
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2.5">
-        <KpiGrid
-          resumo={resumo}
-          meta={meta.data}
-          carregando={fontesCarregando}
-        />
-
-        <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-3">
-          <EvolucaoChart
-            titulo="Evolução da Venda"
-            nomeAtual="Venda atual"
-            cor="var(--chart-1)"
-            formatValor={formatMoeda}
-            formatEixo={formatMoedaCompacta}
-            pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, vendaDoIntervalo)}
-            carregando={fontesCarregando.vendas}
-          />
-          <EvolucaoChart
-            titulo="Evolução da Margem Bruta"
-            nomeAtual="Margem atual"
-            cor="var(--chart-5)"
-            formatValor={formatPercentual}
-            formatEixo={(v) => `${Math.round(v)}%`}
-            larguraEixo={44}
-            eixoDesdeZero
-            pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, margemDoIntervalo)}
-            carregando={fontesCarregando.vendas}
-          />
-          <MetaAcumulado meta={meta.data} carregando={fontesCarregando.meta} />
         </div>
-
-        <ResizableRow
-          storageKey="sgbi:painel-executivo:linha-departamentos"
-          esquerda={<DepartamentosTable filtros={filtros} />}
-          direita={
-            <AlertasList alertas={listaAlertas} carregando={alertasCarregando} />
-          }
-        />
       </div>
+
+      <GradePersonalizavel
+        grade={grade}
+        rotulos={ROTULOS}
+        blocos={["kpis"]}
+        cards={{
+          kpis: <BlocoKpis grade={grade} bloco="kpis" itens={kpis} maxColunas={5} />,
+          "evolucao-venda": (
+            <EvolucaoChart
+              titulo="Evolução da Venda"
+              nomeAtual="Venda atual"
+              cor="var(--chart-1)"
+              formatValor={formatMoeda}
+              formatEixo={formatMoedaCompacta}
+              pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, vendaDoIntervalo)}
+              carregando={fontesCarregando.vendas}
+              alturaGrafico="min-h-0 flex-1"
+            />
+          ),
+          "evolucao-margem": (
+            <EvolucaoChart
+              titulo="Evolução da Margem Bruta"
+              nomeAtual="Margem atual"
+              cor="var(--chart-5)"
+              formatValor={formatPercentual}
+              formatEixo={(v) => `${Math.round(v)}%`}
+              larguraEixo={44}
+              eixoDesdeZero
+              pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, margemDoIntervalo)}
+              carregando={fontesCarregando.vendas}
+              alturaGrafico="min-h-0 flex-1"
+            />
+          ),
+          meta: <MetaAcumulado meta={meta.data} carregando={fontesCarregando.meta} />,
+          departamentos: <DepartamentosTable filtros={filtros} />,
+          alertas: <AlertasList alertas={listaAlertas} carregando={alertasCarregando} />,
+        }}
+      />
     </div>
   );
 }

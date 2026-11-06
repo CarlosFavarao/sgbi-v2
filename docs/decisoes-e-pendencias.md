@@ -66,6 +66,7 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D17 | Repositório provisório em conta pessoal; se o projeto for aprovado, vai para a organização da empresa (ver P22) | 04/11/2026 |
 | D25 | Código comum às telas fica fora das features: filtros, cards de KPI e gráfico de evolução em `src/components/`; datas, formatação, cálculos, tipos dos filtros e chamadas da API em `src/lib/`; validação de parâmetros e filiais em `src/server/` (rota `/api/filiais` compartilhada) | 04/11/2026 |
 | D42 | **Ticket Médio e base PDV do Painel Executivo vêm do `logpdv`** (como em Vendas), não mais do `parfil`, que soma cerca de metade da venda (P6). Cancelamentos ÷ venda PDV também muda de base | 04/11/2026 |
+| D43 | **Layout personalizável** (pedido do usuário, 06/11/2026; piloto no Painel Executivo): o lápis no cabeçalho liga a edição, em que os cards podem ser arrastados (dnd-kit, `@dnd-kit/react`), redimensionados e ocultados, com "Restaurar padrão". A tela é uma pilha de **linhas de 12 colunas**: cada card tem coluna de início e largura, e **espaços vazios são permitidos em qualquer ponto da linha** (o sistema não estica cards; o usuário redimensiona ou deixa vazio). O card é arrastado por qualquer ponto, com uma prévia de onde vai cair (solto sobre outro card, os dois trocam de lugar; o que não couber vai para uma linha nova abaixo), e redimensionado pelas quatro bordas e pelos quatro cantos, com animação. Cada card tem tamanho mínimo e máximo (`src/features/painel-executivo/layout.ts`). Os KPIs formam um bloco: dentro dele, cada KPI pode ser arrastado, alargado (2 colunas) ou ocultado. A unidade de altura é calculada para o layout padrão ocupar a tela sem rolar. O layout fica salvo **no navegador** (`localStorage`); abaixo de 1280 px os cards empilham e não há edição. O `ResizableRow` saiu do Painel | 06/11/2026 |
 
 ---
 
@@ -378,6 +379,21 @@ Dependem das fontes da P51.
 **P56. Lista de filiais por tela** — Coordenação
 A DRE tem as filiais 1, 2, 3 e 11; as outras telas listam as filiais com venda na analise gerencial (sem a 3, com 7, 14, 15, 17 e 18). Ver P12.
 - Unificar numa lista única (cadastro de filiais ou permissões do usuário)?
+
+> Resposta: _em aberto_
+
+### Layout personalizável
+
+**P57. Salvar o layout por usuário** — Coordenação / Infra
+Hoje o layout fica no navegador (`localStorage`): vale só naquele computador e navegador, e some se os dados do site forem apagados.
+- Salvar por usuário no servidor quando houver login (P13)? Em que banco (P20)?
+- Deve existir um layout padrão por cliente (definido pelo administrador)?
+
+> Resposta: _em aberto_
+
+**P58. Personalização nas outras telas** — Coordenação
+O piloto está só no Painel Executivo (D43). Vendas, Metas, Fluxo de Caixa e DFC ainda usam o layout fixo com `ResizableRow`.
+- Aprovar o piloto e levar para as outras telas? Algum ajuste de comportamento antes (ex.: limites de tamanho, cards que não podem ser ocultados)?
 
 > Resposta: _em aberto_
 

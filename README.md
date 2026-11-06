@@ -2,7 +2,7 @@
 
 Reescrita do **SGBI** (Business Intelligence do VX) em Next.js 16. Telas prontas:
 
-- **Painel Executivo** (`/`): indicadores de venda, margem, despesas, metas, compras e cancelamentos em uma única tela, sem rolagem.
+- **Painel Executivo** (`/`): indicadores de venda, margem, despesas, metas, compras e cancelamentos em uma única tela, sem rolagem. O layout é personalizável (lápis no cabeçalho: arrastar, redimensionar e ocultar cards, salvo no navegador).
 - **Metas** (`/metas`): cumprimento das metas de venda e de margem por dia, semana, quinzena, mês e ano, com projeção de fechamento e acompanhamento por departamento, grupo e subgrupo.
 - **Financeiro · Fluxo de Caixa** (`/financeiro`): entradas (cartões e contas a receber) e saídas (contas a pagar) realizadas e previstas, compromissos a vencer e prazos médios.
 - **Financeiro · DFC** (`/financeiro/dfc`): estrutura da DFC pelo método direto, sem valores, indicando em cada bloco o dado de caixa que falta (pendência P51).

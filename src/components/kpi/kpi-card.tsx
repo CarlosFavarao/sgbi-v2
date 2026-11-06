@@ -74,9 +74,10 @@ export function KpiCard({
 }) {
   const t = TONS[tom];
   return (
-    <article aria-busy={!!carregando} className="@container relative flex min-w-0 flex-col rounded-2xl border bg-card px-3 py-2.5 text-card-foreground shadow-md">
-      <div className="flex items-center gap-2">
-        <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${t.bg}`}>
+    <article aria-busy={!!carregando} className="@container relative flex min-w-0 flex-col rounded-2xl border bg-card px-3 py-2.5 text-card-foreground shadow-md [[data-altura=minima]_&]:flex-row [[data-altura=minima]_&]:items-center [[data-altura=minima]_&]:gap-2 [[data-altura=minima]_&]:py-1">
+      {/* Altura mínima (bloco da grade personalizável): título e valor na mesma linha. */}
+      <div className="flex min-w-0 items-center gap-2 [[data-altura=minima]_&]:max-w-[50%] [[data-altura=minima]_&]:shrink-0">
+        <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg [[data-altura=minima]_&]:hidden ${t.bg}`}>
           <Icon path={icone} size={0.75} className={t.icon} aria-hidden />
         </div>
         <h3 className="min-w-0 truncate text-[13px] font-semibold" title={titulo}>
@@ -84,23 +85,28 @@ export function KpiCard({
         </h3>
         <InfoTooltip texto={ajuda} />
         {badge && (
-          <span className="ml-auto rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
+          <span className="ml-auto rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground [[data-altura=minima]_&]:hidden">
             {badge}
           </span>
         )}
       </div>
       {/* Minigráfico ao lado do valor e da variação: o card fica mais baixo. */}
-      <div className="mt-1 flex flex-1 items-end justify-between gap-2">
-        <div className="min-w-0 flex-1">
+      <div className="mt-1 flex min-h-0 flex-1 items-end justify-between gap-2 [[data-altura=minima]_&]:mt-0 [[data-altura=minima]_&]:items-center [[data-altura=minima]_&]:justify-end">
+        <div className="min-w-0 flex-1 [[data-altura=minima]_&]:text-right">
           {/* Valores com centavos são longos: fonte menor em cards estreitos (container query). */}
-          <div className="truncate text-sm font-bold tabular-nums tracking-tight @[12rem]:text-base @[14rem]:text-lg @[16rem]:text-xl">
+          <div className="truncate text-sm font-bold tabular-nums tracking-tight @[12rem]:text-base @[14rem]:text-lg @[16rem]:text-xl [[data-altura=minima]_&]:text-sm!">
             {valor}
           </div>
-          <div className="flex min-h-4 min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+          <div className="flex min-h-4 min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground [[data-altura=baixa]_&]:hidden [[data-altura=minima]_&]:hidden">
             {linhas}
           </div>
         </div>
-        {grafico}
+        {/* KPI estreito ou baixo (bloco da grade personalizável): sem minigráfico, para não apertar o valor. */}
+        {grafico && (
+          <div className="shrink-0 @max-[13rem]:hidden [[data-altura=baixa]_&]:hidden [[data-altura=minima]_&]:hidden">
+            {grafico}
+          </div>
+        )}
       </div>
       {/* Cobre o card inteiro: os dados antigos (ou vazios) não ficam legíveis. */}
       <LoadingOverlay ativo={!!carregando} label={titulo} className="rounded-2xl" />
@@ -110,5 +116,5 @@ export function KpiCard({
 
 /** Mensagem no lugar do valor quando não há dados. */
 export function SemDados({ children }: { children: ReactNode }) {
-  return <span className="text-sm font-medium text-muted-foreground">{children}</span>;
+  return <span className="text-sm font-medium text-muted-foreground [[data-altura=minima]_&]:text-xs">{children}</span>;
 }

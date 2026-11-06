@@ -27,7 +27,14 @@ function Comparativo({ temAnterior, children }: { temAnterior: boolean; children
   return temAnterior ? children : <span>sem dados no período anterior</span>;
 }
 
-export function KpiGrid({
+export type ItemKpi = { id: string; titulo: string; node: React.ReactNode };
+
+/**
+ * Os KPIs do Painel (venda, lucro, margem, despesas, resultado, meta, ticket,
+ * compra sobre venda, cancelamentos e descontos), na ordem padrão. O bloco de
+ * KPIs da grade personalizável (`BlocoKpis`) monta a grade deles.
+ */
+export function kpisDoPainel({
   resumo,
   meta,
   carregando,
@@ -53,10 +60,11 @@ export function KpiGrid({
 
   const atingido = meta && meta.metaPeriodo ? percentual(a.venda, meta.metaPeriodo) : null;
 
-  return (
-    // Grade única 5 × 2: os dois grupos usam `contents` para fluir na mesma grade.
-    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      <div className="contents">
+  return [
+    {
+      id: "venda",
+      titulo: "Venda",
+      node: (
         <KpiCard
           titulo="Venda"
           ajuda="Soma da venda (PDV e/ou faturamento, conforme a Origem) no período."
@@ -68,8 +76,8 @@ export function KpiGrid({
             temVenda && (
               <>
                 <Comparativo temAnterior={temVendaAnterior}>
-                <Delta value={variacao(a.venda, b.venda)} unidade="%" maiorMelhor />
-                <Vs>{formatMoeda(b.venda)}</Vs>
+                  <Delta value={variacao(a.venda, b.venda)} unidade="%" maiorMelhor />
+                  <Vs>{formatMoeda(b.venda)}</Vs>
                 </Comparativo>
               </>
             )
@@ -84,6 +92,12 @@ export function KpiGrid({
             />
           }
         />
+      ),
+    },
+    {
+      id: "lucro-bruto",
+      titulo: "Lucro Bruto",
+      node: (
         <KpiCard
           titulo="Lucro Bruto"
           ajuda="Venda menos o custo da mercadoria vendida."
@@ -95,8 +109,8 @@ export function KpiGrid({
             temVenda && (
               <>
                 <Comparativo temAnterior={temVendaAnterior}>
-                <Delta value={variacao(a.lucro, b.lucro)} unidade="%" maiorMelhor />
-                <Vs>{formatMoeda(b.lucro)}</Vs>
+                  <Delta value={variacao(a.lucro, b.lucro)} unidade="%" maiorMelhor />
+                  <Vs>{formatMoeda(b.lucro)}</Vs>
                 </Comparativo>
               </>
             )
@@ -111,6 +125,12 @@ export function KpiGrid({
             />
           }
         />
+      ),
+    },
+    {
+      id: "margem-bruta",
+      titulo: "Margem Bruta",
+      node: (
         <KpiCard
           titulo="Margem Bruta"
           ajuda="Lucro bruto dividido pela venda. Variação em pontos percentuais."
@@ -122,8 +142,8 @@ export function KpiGrid({
             a.margem != null && (
               <>
                 <Comparativo temAnterior={temVendaAnterior}>
-                <Delta value={diferencaPp(a.margem, b.margem)} unidade="pp" maiorMelhor />
-                <Vs>{formatPercentual(b.margem)}</Vs>
+                  <Delta value={diferencaPp(a.margem, b.margem)} unidade="pp" maiorMelhor />
+                  <Vs>{formatPercentual(b.margem)}</Vs>
                 </Comparativo>
               </>
             )
@@ -138,6 +158,12 @@ export function KpiGrid({
             />
           }
         />
+      ),
+    },
+    {
+      id: "despesas-operacionais",
+      titulo: "Despesas Operacionais",
+      node: (
         <KpiCard
           titulo="Despesas Operacionais"
           ajuda="Soma das despesas lançadas no período (tabela despesa)."
@@ -171,19 +197,19 @@ export function KpiGrid({
             />
           }
         />
+      ),
+    },
+    {
+      id: "resultado-operacional",
+      titulo: "Resultado Operacional",
+      node: (
         <KpiCard
           titulo="Resultado Operacional"
           ajuda="Lucro bruto menos as despesas operacionais."
           icone={mdiFinance}
           tom="purple"
           carregando={c.vendas || c.despesas}
-          valor={
-            temVenda && temDespesas ? (
-              formatMoeda(a.resultado)
-            ) : (
-              <SemDados>Sem despesas no período</SemDados>
-            )
-          }
+          valor={temVenda && temDespesas ? formatMoeda(a.resultado) : <SemDados>Sem despesas no período</SemDados>}
           linhas={
             temVenda &&
             temDespesas && (
@@ -198,40 +224,38 @@ export function KpiGrid({
             )
           }
         />
+      ),
+    },
+    {
+      id: "venda-vs-meta",
+      titulo: "Venda vs Meta",
+      node: (
         <KpiCard
           titulo="Venda vs Meta"
           ajuda="Venda do período dividida pela meta (previsão de venda por dia) do mesmo período."
           icone={mdiBullseyeArrow}
           tom="teal"
           carregando={c.meta || c.vendas}
-          valor={
-            atingido != null ? (
-              formatMoeda(a.venda)
-            ) : (
-              <SemDados>Meta não cadastrada</SemDados>
-            )
-          }
+          valor={atingido != null ? formatMoeda(a.venda) : <SemDados>Meta não cadastrada</SemDados>}
           linhas={
             atingido != null &&
             meta && (
               <>
-                <span className="font-semibold text-foreground tabular-nums">
-                  {formatPercentual(atingido)} da meta
-                </span>
+                <span className="font-semibold text-foreground tabular-nums">{formatPercentual(atingido)} da meta</span>
                 <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full rounded-full bg-success"
-                    style={{ width: `${Math.min(atingido, 100)}%` }}
-                  />
+                  <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(atingido, 100)}%` }} />
                 </div>
                 <span className="tabular-nums">Meta: {formatMoeda(meta.metaPeriodo)}</span>
               </>
             )
           }
         />
-      </div>
-
-      <div className="contents">
+      ),
+    },
+    {
+      id: "ticket-medio",
+      titulo: "Ticket Médio",
+      node: (
         <KpiCard
           titulo="Ticket Médio"
           ajuda="Venda do PDV dividida pela quantidade de cupons (logpdv, mesma base da tela de Vendas). Não usa o filtro de Origem."
@@ -244,8 +268,8 @@ export function KpiGrid({
             a.ticketMedio != null && (
               <>
                 <Comparativo temAnterior={temPdvAnterior}>
-                <Delta value={variacao(a.ticketMedio, b.ticketMedio)} unidade="%" maiorMelhor />
-                <Vs>{formatMoeda(b.ticketMedio)}</Vs>
+                  <Delta value={variacao(a.ticketMedio, b.ticketMedio)} unidade="%" maiorMelhor />
+                  <Vs>{formatMoeda(b.ticketMedio)}</Vs>
                 </Comparativo>
               </>
             )
@@ -260,6 +284,12 @@ export function KpiGrid({
             />
           }
         />
+      ),
+    },
+    {
+      id: "compra-sobre-venda",
+      titulo: "Compra sobre Venda",
+      node: (
         <KpiCard
           titulo="Compra sobre Venda"
           ajuda="Total comprado dividido pela venda do período. Quanto menor, melhor."
@@ -277,12 +307,8 @@ export function KpiGrid({
             a.compraSobreVenda != null && (
               <>
                 <Comparativo temAnterior={temVendaAnterior}>
-                <Delta
-                  value={diferencaPp(a.compraSobreVenda, b.compraSobreVenda)}
-                  unidade="pp"
-                  maiorMelhor={false}
-                />
-                <Vs>{formatPercentual(b.compraSobreVenda)}</Vs>
+                  <Delta value={diferencaPp(a.compraSobreVenda, b.compraSobreVenda)} unidade="pp" maiorMelhor={false} />
+                  <Vs>{formatPercentual(b.compraSobreVenda)}</Vs>
                 </Comparativo>
               </>
             )
@@ -297,6 +323,12 @@ export function KpiGrid({
             />
           }
         />
+      ),
+    },
+    {
+      id: "cancelamentos",
+      titulo: "Cancelamentos",
+      node: (
         <KpiCard
           titulo="Cancelamentos"
           ajuda="Valor cancelado no PDV (tabela cancelamentos), sobre a venda do PDV."
@@ -304,20 +336,12 @@ export function KpiGrid({
           tom="coral"
           badge="PDV"
           carregando={c.cancelamentos || c.pdv}
-          valor={
-            a.cobertura.cancelamentos ? (
-              formatMoeda(a.cancelamentos)
-            ) : (
-              <SemDados>Sem dados no período</SemDados>
-            )
-          }
+          valor={a.cobertura.cancelamentos ? formatMoeda(a.cancelamentos) : <SemDados>Sem dados no período</SemDados>}
           linhas={
             a.cobertura.cancelamentos > 0 && (
               <>
                 {temPdv && (
-                  <span className="tabular-nums">
-                    {formatPercentual(a.cancelamentosSobreVenda)} da venda PDV
-                  </span>
+                  <span className="tabular-nums">{formatPercentual(a.cancelamentosSobreVenda)} da venda PDV</span>
                 )}
                 <Comparativo temAnterior={temCancelAnterior}>
                   <span className="flex flex-wrap items-center gap-x-2">
@@ -338,6 +362,12 @@ export function KpiGrid({
             />
           }
         />
+      ),
+    },
+    {
+      id: "descontos",
+      titulo: "Descontos",
+      node: (
         <KpiCard
           titulo="Descontos"
           ajuda="Cálculo em definição (decisão adiada): a soma de descontos no logpdv leva cerca de 34 s por mês."
@@ -347,7 +377,7 @@ export function KpiGrid({
           valor={<SemDados>Em definição</SemDados>}
           linhas={<span>Venda bruta = venda + descontos</span>}
         />
-      </div>
-    </div>
-  );
+      ),
+    },
+  ];
 }
