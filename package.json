@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:pull": "drizzle-kit pull",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@dnd-kit/dom": "^0.5.3",
@@ -41,6 +43,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.12"
   }
 }

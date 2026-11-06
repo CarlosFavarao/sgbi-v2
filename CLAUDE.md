@@ -54,6 +54,7 @@ Projeto de Business Intelligence em Next.js 16 (App Router, TypeScript, Tailwind
 - `npm run dev` — servidor de desenvolvimento (Turbopack)
 - `npm run build` — build de produção
 - `npm run lint` — ESLint
+- `npm test` — testes de regressão (Vitest, D44); `npm run test:watch` roda ao salvar. Testes ficam ao lado do código (`*.test.ts`) e cobrem só funções puras (`lib/`, `server/params.ts`, `compute.ts`, `metas.ts`, `periodos.ts`, `abc.ts`). **Mudou uma regra de negócio ou corrigiu um cálculo? Atualize/crie o teste e rode `npm test` junto com `lint` e `build`.**
 - `npm run db:pull` — introspecta o banco e gera schema Drizzle em `drizzle/`
 - `npm run db:studio` — Drizzle Studio
 
