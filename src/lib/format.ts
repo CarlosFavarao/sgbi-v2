@@ -82,3 +82,10 @@ const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "o
 export function formatMesAno(isoMonth: string): string {
   return `${meses[Number(isoMonth.slice(5, 7)) - 1]}/${isoMonth.slice(0, 4)}`;
 }
+
+/** CNPJ com pontuação (`12.345.678/0001-90`); outro formato volta como veio. */
+export function formatCnpj(valor: string | null | undefined): string {
+  const digitos = (valor ?? "").replace(/\D/g, "");
+  if (digitos.length !== 14) return valor ?? "";
+  return digitos.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+}

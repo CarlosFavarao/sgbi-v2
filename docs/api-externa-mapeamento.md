@@ -52,12 +52,14 @@ Campos que o **login do VX** devolve e o BI usa durante a sessão:
 | `niveisDepartamentalizacao`, `departamentalizacao` (`nivel1`...`nivel6`) | Quantidade de níveis mercadológicos e o **nome de cada nível** no cliente | Sim |
 | `curvaABC` (`A`, `B`, `C`, `D` em %) | Faixas da Curva ABC | Sim |
 | `assistenteIaAjuda`, `assistenteIaConsultor` | Liberam os chats de IA | Sim |
-| `sistema` | Bloqueia painéis por sistema (`isPanelBlocked`) | Sim |
+| `sistema` | Plataforma do cliente (`SGVX`, `CLOUD`, `FIVEWIN`): bloqueia painéis no Fivewin (`isPanelBlocked`). No v2 define as fontes de dados disponíveis e desabilita os cards sem dado (D46, P61) | Sim |
 | `pegarVendas`, `descricaoPegarVendas` (ex.: `T` = "ambas as tabelas") | Origem padrão das vendas (PDV, Faturamento ou ambas) | **Não**: o código tem um "tratar salesOrigin" pendente e sempre usa `TODOS` |
 | `lgpdClientesCamposProtegidos` | Campos de cliente a ocultar (CPF, endereço, telefone...) | **Não** |
 | `email`, `grupo`, `nivel`, `senha` (hash) | — | Não |
 
 Regra do login antigo: um usuário que não é admin precisa existir na tabela local `users` com pelo menos um relatório liberado; senão recebe 403, mesmo com a senha correta.
+
+**No v2 (D45):** o login usa o mesmo `POST /sgbi/login` (`src/server/login.ts`, pelo cliente `src/server/vx.ts`) e o `GET /status` na tela de login. A regra dos relatórios liberados e as filiais do usuário ainda não são aplicadas (P59): a sessão guarda só `login`, `nome` e `admin`. O envio da versão ao repositório SG não foi levado (P60). Como no BI antigo, sem token na tabela `tokens` o usuário e a senha vão em maiúsculas; com token, o usuário vai em minúsculas e a senha como digitada.
 
 ## 4. Rotas documentadas no Postman e não usadas pelo BI antigo
 

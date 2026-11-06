@@ -23,7 +23,7 @@ import { MetasPorPeriodo, RankingDepartamentos, ritmo, SituacaoMargem } from "./
 import { CumprimentoChart } from "./cumprimento-chart";
 import { FiltrosMetasBar } from "./filtros-metas";
 import { kpisDasMetas, type Comparativo } from "./kpis-metas";
-import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
+import { FONTES, LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
 
 /** Nomes fixos dos KPIs na lista de ocultos (o título do card muda com a aba). */
 const TITULOS_KPIS: Record<string, string> = {
@@ -271,12 +271,13 @@ export function Metas() {
           <AbasPeriodo periodos={periodos} value={aba} onChange={setAba} referencia={referencia} />
 
           <GradePersonalizavel
+            fontes={FONTES}
             grade={grade}
             rotulos={ROTULOS}
             blocos={["kpis"]}
             cards={{
               kpis: (
-                <BlocoKpis
+                <BlocoKpis fontes={FONTES}
                   grade={grade}
                   bloco="kpis"
                   itens={kpisDasMetas({

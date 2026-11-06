@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { useAvisos, type Aviso } from "@/components/avisos";
 import { EvolucaoChart } from "@/components/charts/evolucao-chart";
 import { FiltrosBar } from "@/components/filtros/filtros-bar";
+import { useAcesso } from "@/components/acesso/contexto";
 import { BarraEdicao } from "@/components/layout/barra-edicao";
 import { BlocoKpis } from "@/components/layout/bloco-kpis";
 import { GradePersonalizavel } from "@/components/layout/grade-personalizavel";
@@ -23,7 +24,7 @@ import { CurvaAbc } from "./curva-abc";
 import { DepartamentosBarras } from "./departamentos-barras";
 import { DesempenhoTable } from "./desempenho-table";
 import { kpisDeVendas } from "./kpis-vendas";
-import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
+import { FONTES, LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
 import { ProdutosLista } from "./produtos-lista";
 
 type FiltrosEstado = Omit<Filtros, "filiais"> & { filiais: number[] | null };
@@ -59,10 +60,12 @@ export function Vendas() {
   );
 
   // Uma consulta por fonte: a venda (rápida) não espera os cupons (logpdv, lenta).
-  const vendas = useQuery(vendasQueries.serie(filtros, "vendas"));
-  const cupons = useQuery(vendasQueries.serie(filtros, "cupons"));
-  const departamentos = useQuery(vendasQueries.niveis(filtros, "departamento"));
-  const produtos = useQuery(vendasQueries.produtos(filtros));
+  // Fonte que a plataforma não envia ao banco não é consultada (os cards dela ficam desabilitados, D46).
+  const { seHouver } = useAcesso();
+  const vendas = useQuery(seHouver(vendasQueries.serie(filtros, "vendas"), ["venda"]));
+  const cupons = useQuery(seHouver(vendasQueries.serie(filtros, "cupons"), ["pdv"]));
+  const departamentos = useQuery(seHouver(vendasQueries.niveis(filtros, "departamento"), ["venda"]));
+  const produtos = useQuery(seHouver(vendasQueries.produtos(filtros), ["venda"]));
 
   const anterior = useMemo(
     () => periodoComparacao(filtros.periodo, filtros.comparacao),
@@ -169,11 +172,12 @@ export function Vendas() {
       </div>
 
       <GradePersonalizavel
+        fontes={FONTES}
         grade={grade}
         rotulos={ROTULOS}
         blocos={["kpis"]}
         cards={{
-          kpis: <BlocoKpis grade={grade} bloco="kpis" itens={kpis} maxColunas={6} />,
+          kpis: <BlocoKpis fontes={FONTES} grade={grade} bloco="kpis" itens={kpis} maxColunas={6} />,
           "evolucao-vendas": (
             <EvolucaoChart
               titulo="Evolução das Vendas"

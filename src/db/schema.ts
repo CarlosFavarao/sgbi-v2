@@ -221,3 +221,13 @@ export const viewDre = mysqlTable("view_dre", {
   valor: double("valor"),
   descricao: varchar("descricao", { length: 255 }),
 });
+
+/**
+ * Token da API do VX (`API_VIEW`), cadastrado na instalação do BI antigo. Vazio
+ * em homologação. Só o servidor lê (`src/server/vx.ts`); nunca vai para o cliente.
+ */
+export const tokens = mysqlTable("tokens", {
+  id: int("id").primaryKey().autoincrement(),
+  token: varchar("token", { length: 255 }).notNull(),
+  endpoint: varchar("endpoint", { length: 255 }),
+});

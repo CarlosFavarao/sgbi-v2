@@ -8,6 +8,8 @@ Reescrita do **SGBI** (Business Intelligence do VX) em Next.js 16. Telas prontas
 - **Financeiro · DFC** (`/financeiro/dfc`): estrutura da DFC pelo método direto, sem valores, indicando em cada bloco o dado de caixa que falta (pendência P51).
 - **Vendas** (`/vendas`): desempenho comercial por departamento, grupo e subgrupo, cupons e ticket médio, Curva ABC e listas de produtos.
 
+O acesso é pelo **login do VX** (`/login`), como no BI antigo; as permissões por usuário ainda estão em aberto (P59). O BI também atende Cloud e Fivewin: o card cujo dado a plataforma não envia ao banco aparece desabilitado (D46).
+
 > **Status:** POC em homologação. As decisões tomadas e as perguntas ainda em aberto estão em [`docs/decisoes-e-pendencias.md`](docs/decisoes-e-pendencias.md).
 
 ## Stack
@@ -21,12 +23,13 @@ Reescrita do **SGBI** (Business Intelligence do VX) em Next.js 16. Telas prontas
 | Gráficos | **Recharts v3** |
 | Ícones | **Material Design Icons** (`@mdi/react` + `@mdi/js`) |
 | Componentes | Radix UI (Select, Popover, Checkbox), `react-day-picker` (calendário) e `date-fns` |
+| Sessão | Cookie com JWT assinado (`jose`), conferido no `src/proxy.ts` e nas rotas |
 
 ## Requisitos
 
 - Node.js 24 (ver `.nvmrc`)
 - Acesso ao MySQL do SGBI (em homologação, o banco `sgbi_teste`)
-- Opcional: acesso à API de views do VX (`API_VIEW`), necessária para os dados do dia atual
+- Acesso à API de views do VX (`API_VIEW`), necessária para o login e para os dados do dia atual
 
 ## Como rodar
 
@@ -45,6 +48,9 @@ Abra http://localhost:3000. Pela rede interna, o `next dev` aceita os endereços
 |---|---|
 | `API_VIEW` | URL base da API de views do VX |
 | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE` | Conexão com o MySQL |
+| `JWT_SECRET` | Assina o cookie de sessão do login; obrigatório, mínimo 32 caracteres, um por instalação (`openssl rand -base64 32`) |
+| `CLIENT_SLUG` | Opcional: dá um cookie próprio a cada SGBI quando há mais de um no mesmo endereço |
+| `PLATAFORMA` | Opcional, para testes: força `vx`, `cloud` ou `fivewin` e mostra os cards indisponíveis nela |
 
 O `.env.local` não é versionado. As variáveis são lidas só no servidor (`src/lib/env.ts`) e nunca podem usar o prefixo `NEXT_PUBLIC_`.
 

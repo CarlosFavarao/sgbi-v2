@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import type { Acesso } from "./acesso";
 import { periodoComparacao } from "./date";
 import type { FiliaisResponse, Filtros } from "./filtros";
 
@@ -7,6 +8,13 @@ export async function getJson<T>(path: string, params?: Record<string, string>):
   const query = params ? `?${new URLSearchParams(params)}` : "";
   const response = await fetch(`${path}${query}`);
   const body = await response.json().catch(() => null);
+  // Sessão vencida (D45): volta ao login e, depois de entrar, para esta tela.
+  if (response.status === 401 && typeof window !== "undefined") {
+    const de = `${window.location.pathname}${window.location.search}`;
+    // Fora de um componente (sem router) e com recarga completa, que descarta o cache da sessão vencida.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign(`/login?de=${encodeURIComponent(de)}`);
+  }
   if (!response.ok) throw new Error(body?.error ?? "Falha ao carregar os dados.");
   return body as T;
 }
@@ -33,5 +41,15 @@ export const filiaisQuery = () =>
   queryOptions({
     queryKey: ["filiais"],
     queryFn: () => getJson<FiliaisResponse>("/api/filiais"),
+    staleTime: Infinity,
+  });
+
+export type Sessao = { usuario: { login: string; nome: string; admin: boolean }; acesso: Acesso };
+
+/** Usuário logado e o que ele pode ver (D45, D46). Vale até sair: a plataforma e as permissões vêm do login. */
+export const sessaoQuery = () =>
+  queryOptions({
+    queryKey: ["sessao"],
+    queryFn: () => getJson<Sessao>("/api/sessao"),
     staleTime: Infinity,
   });

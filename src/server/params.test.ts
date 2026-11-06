@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   handle,
   oneOf,
@@ -9,6 +9,11 @@ import {
   parsePeriodo,
   parsePeriodoComparacao,
 } from "./params";
+import { usuarioAtual } from "./sessao";
+
+// O `handle()` checa a sessão (cookie da requisição); nos testes, um usuário fixo.
+vi.mock("./sessao", () => ({ usuarioAtual: vi.fn() }));
+vi.mock("./acesso", () => ({ AcessoNegado: class AcessoNegado extends Error {} }));
 
 const q = (s: string) => new URLSearchParams(s);
 
@@ -82,10 +87,31 @@ describe("origem, nível e oneOf", () => {
 });
 
 describe("handle", () => {
+  beforeEach(() => {
+    vi.mocked(usuarioAtual).mockResolvedValue({ login: "TESTE", nome: "Teste", admin: false, plataforma: "vx" });
+  });
+
+  it("sem sessão responde 401 e não executa a rota", async () => {
+    vi.mocked(usuarioAtual).mockResolvedValue(null);
+    const fn = vi.fn(async () => ({ ok: true }));
+    const r = await handle(fn);
+    expect(r.status).toBe(401);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   it("responde 200 com o JSON do resultado", async () => {
     const r = await handle(async () => ({ ok: true }));
     expect(r.status).toBe(200);
     expect(await r.json()).toEqual({ ok: true });
+  });
+
+  it("AcessoNegado vira 403 com a mensagem", async () => {
+    const { AcessoNegado } = await import("./acesso");
+    const r = await handle(async () => {
+      throw new AcessoNegado("O Fivewin ainda não envia ao banco do BI: despesas.");
+    });
+    expect(r.status).toBe(403);
+    expect(await r.json()).toEqual({ error: "O Fivewin ainda não envia ao banco do BI: despesas." });
   });
 
   it("ParamError vira 400 com a mensagem", async () => {

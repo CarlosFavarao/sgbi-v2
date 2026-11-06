@@ -4,6 +4,7 @@ import Icon from "@mdi/react";
 import { mdiDatabaseClockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { useAcesso } from "@/components/acesso/contexto";
 import { useAvisos } from "@/components/avisos";
 import { BarraEdicao } from "@/components/layout/barra-edicao";
 import { BlocoKpis } from "@/components/layout/bloco-kpis";
@@ -30,7 +31,7 @@ import { EvolucaoChart } from "@/components/charts/evolucao-chart";
 import { evolucaoComparativa } from "@/lib/serie";
 import { FiltrosBar } from "@/components/filtros/filtros-bar";
 import { kpisDoPainel } from "./kpi-grid";
-import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
+import { FONTES, LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
 import { MetaAcumulado } from "./meta-acumulado";
 
 type FiltrosEstado = Omit<Filtros, "filiais"> & { filiais: number[] | null };
@@ -53,13 +54,15 @@ export function PainelExecutivo() {
     [estado, filiaisQuery.data],
   );
 
-  // Uma consulta por fonte: cada card aparece assim que as suas fontes chegam.
-  const vendas = useQuery(painelQueries.serie(filtros, "vendas"));
-  const pdv = useQuery(painelQueries.serie(filtros, "pdv"));
-  const cancelamentos = useQuery(painelQueries.serie(filtros, "cancelamentos"));
-  const despesas = useQuery(painelQueries.serie(filtros, "despesas"));
-  const meta = useQuery(painelQueries.meta(filtros));
-  const departamentos = useQuery(painelQueries.departamentos(filtros, "departamento"));
+  // Uma consulta por fonte: cada card aparece assim que as suas fontes chegam. Fonte que a plataforma
+  // não envia ao banco não é consultada (os cards que a usam ficam desabilitados, D46).
+  const { seHouver: se } = useAcesso();
+  const vendas = useQuery(se(painelQueries.serie(filtros, "vendas"), ["venda"]));
+  const pdv = useQuery(se(painelQueries.serie(filtros, "pdv"), ["pdv"]));
+  const cancelamentos = useQuery(se(painelQueries.serie(filtros, "cancelamentos"), ["cancelamentos"]));
+  const despesas = useQuery(se(painelQueries.serie(filtros, "despesas"), ["despesas"]));
+  const meta = useQuery(se(painelQueries.meta(filtros), ["metas", "venda"]));
+  const departamentos = useQuery(se(painelQueries.departamentos(filtros, "departamento"), ["venda", "compra"]));
 
   // Carregando = primeira carga ou troca de filtro (dados anteriores ficam cobertos).
   const carregando = (q: { isPending: boolean; isPlaceholderData: boolean }) => q.isPending || q.isPlaceholderData;
@@ -173,11 +176,12 @@ export function PainelExecutivo() {
       </div>
 
       <GradePersonalizavel
+        fontes={FONTES}
         grade={grade}
         rotulos={ROTULOS}
         blocos={["kpis"]}
         cards={{
-          kpis: <BlocoKpis grade={grade} bloco="kpis" itens={kpis} maxColunas={5} />,
+          kpis: <BlocoKpis fontes={FONTES} grade={grade} bloco="kpis" itens={kpis} maxColunas={5} />,
           "evolucao-venda": (
             <EvolucaoChart
               titulo="Evolução da Venda"

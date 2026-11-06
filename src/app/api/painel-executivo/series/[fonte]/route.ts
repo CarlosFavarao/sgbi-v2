@@ -3,10 +3,21 @@ import { getSerie } from "@/features/painel-executivo/server/data";
 import { parseFonte } from "@/features/painel-executivo/server/params";
 import { handle, parseFiliais, parseOrigem, parsePeriodo, parsePeriodoComparacao } from "@/server/params";
 import type { SerieResponse } from "@/features/painel-executivo/types";
+import type { Fonte } from "@/lib/acesso";
+import { exigirAcesso } from "@/server/acesso";
+
+/** Fonte do banco do BI que cada série lê (D46). */
+const FONTES_DA_SERIE: Record<ReturnType<typeof parseFonte>, readonly Fonte[]> = {
+  vendas: ["venda"],
+  pdv: ["pdv"],
+  cancelamentos: ["cancelamentos"],
+  despesas: ["despesas"],
+};
 
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/painel-executivo/series/[fonte]">) {
   return handle(async (): Promise<SerieResponse> => {
     const fonte = parseFonte((await ctx.params).fonte);
+    await exigirAcesso("painel-executivo", FONTES_DA_SERIE[fonte]);
     const params = request.nextUrl.searchParams;
     const periodo = parsePeriodo(params);
     const anterior = parsePeriodoComparacao(params);

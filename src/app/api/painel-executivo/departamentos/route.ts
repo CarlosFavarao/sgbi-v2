@@ -8,9 +8,11 @@ import {
   parsePeriodo,
   parsePeriodoComparacao,
 } from "@/server/params";
+import { exigirAcesso } from "@/server/acesso";
 
 export async function GET(request: NextRequest) {
-  return handle(() => {
+  return handle(async () => {
+    await exigirAcesso("painel-executivo", ["venda", "compra"]);
     const params = request.nextUrl.searchParams;
     const periodo = parsePeriodo(params);
     return getDepartamentos(

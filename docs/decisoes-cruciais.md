@@ -8,7 +8,7 @@ Posição em 05/11/2026. Nenhuma das perguntas abaixo tem resposta ainda; tudo o
 
 | Tema | Itens | Mais urgente |
 |---|---|---|
-| 1. Dados que faltam | 6 | Fonte de caixa (P51, P42): sem ela a DFC fica vazia e o Fluxo de Caixa parte de zero |
+| 1. Dados que faltam | 7 | Fonte de caixa (P51, P42): sem ela a DFC fica vazia e o Fluxo de Caixa parte de zero |
 | 2. Tratamento dos dados | 8 | Cartão contado pelo vencimento (P43) e meta diária dividida igualmente (P33) |
 | 3. Legendas e situações | 6 | Limites e nomes de "Situação" (P1, P32, P46) e consistência de cores entre telas |
 
@@ -46,6 +46,11 @@ Regra que vale para tudo (decisão do usuário, 04/11/2026): **sem fonte confiá
 - **Precisa de resposta:** incluir o dia de hoje quando o período chegar até ele? Como avisar que parte dos indicadores não o inclui?
 
 ---
+
+### 1.7 Dados de cada plataforma: VX, Cloud e Fivewin (P61, D46)
+- **Hoje:** cada card declara as fontes de dados que usa e fica desabilitado ("Indisponível no Fivewin") quando a plataforma do cliente não as envia ao banco do BI. A lista do que falta em cada plataforma é provisória: o Fivewin repete o BI antigo (sem financeiro, despesas, cartões, metas e compras) e o Cloud é tratado como o VX.
+- **Por que importa:** com a lista errada, o cliente Cloud ou Fivewin vê zeros que parecem dado real, ou perde um card que funcionaria.
+- **Precisa de resposta:** quais tabelas cada plataforma popula (documentação prevista); ajustar só `FONTES_AUSENTES` em `src/lib/acesso.ts`.
 
 ## 2. Tratamento dos dados
 

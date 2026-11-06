@@ -1,3 +1,4 @@
+import type { Fonte } from "@/lib/acesso";
 import type { Layout, Limites } from "@/lib/layout";
 
 /**
@@ -45,3 +46,9 @@ export const ROTULOS: Record<string, string> = {
   "saldo-conta": "Saldo por Conta Financeira",
   movimentacoes: "Movimentações Relevantes do Período",
 };
+
+/**
+ * Fontes de dados por card (D46). A DFC ainda não tem fonte de caixa (P51):
+ * quando tiver, declare aqui as fontes de cada card.
+ */
+export const FONTES: Record<string, readonly Fonte[]> = {};

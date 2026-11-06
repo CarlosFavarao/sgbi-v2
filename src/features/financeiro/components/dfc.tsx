@@ -28,7 +28,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { filiaisQuery } from "@/lib/api";
 import { mesesDoPeriodo } from "@/lib/date";
 import { formatMesAno } from "@/lib/format";
-import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout-dfc";
+import { FONTES, LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout-dfc";
 
 /**
  * DFC (método direto) sem dados até existir fonte de caixa (D41, P51): a tela
@@ -366,11 +366,12 @@ export function Dfc() {
       {cabecalho}
 
       <GradePersonalizavel
+        fontes={FONTES}
         grade={grade}
         rotulos={ROTULOS}
         blocos={["kpis"]}
         cards={{
-          kpis: <BlocoKpis grade={grade} bloco="kpis" itens={kpis} maxColunas={5} />,
+          kpis: <BlocoKpis fontes={FONTES} grade={grade} bloco="kpis" itens={kpis} maxColunas={5} />,
           tabela: <DfcTabela mes={mes || "2000-01"} mesComparacao={mesComparacao || "2000-01"} />,
           evolucao: (
             <CardVazio

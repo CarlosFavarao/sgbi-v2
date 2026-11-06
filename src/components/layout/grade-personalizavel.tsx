@@ -20,6 +20,9 @@ import {
   type ItemLayout,
   type Layout,
 } from "@/lib/layout";
+import { CardBloqueado } from "@/components/acesso/card-bloqueado";
+import { useAcesso } from "@/components/acesso/contexto";
+import type { Fonte } from "@/lib/acesso";
 import { AlcaBorda, pararArraste } from "./alca-borda";
 import { animarDesde, animarSaida, MOLA, MOLA_PREVIA } from "./movimento";
 import type { LayoutTela } from "./use-layout";
@@ -330,6 +333,7 @@ export function GradePersonalizavel({
   cards,
   rotulos,
   blocos = [],
+  fontes = {},
 }: {
   grade: LayoutTela;
   /** Cards com itens editáveis dentro (ex.: `kpis`, com `BlocoKpis`). */
@@ -338,7 +342,18 @@ export function GradePersonalizavel({
   cards: Record<string, ReactNode>;
   /** Nome de cada card (alça de arrastar, lista de ocultos). */
   rotulos: Record<string, string>;
+  /**
+   * Fontes de dados que cada card usa (`FONTES` do `layout.ts` da tela): sem
+   * alguma delas na plataforma, ou sem permissão, o card fica desabilitado (D46).
+   */
+  fontes?: Record<string, readonly Fonte[]>;
 }) {
+  const acesso = useAcesso();
+  // O card desabilitado não monta o conteúdo, então as consultas internas dele não saem.
+  const conteudo = (id: string) => {
+    const b = acesso.bloqueio(id, fontes[id]);
+    return b ? <CardBloqueado titulo={rotulos[id] ?? id} bloqueio={b} /> : cards[id];
+  };
   const ref = useRef<HTMLDivElement>(null);
   const larga = grade.larga;
   const unidade = useUnidade(ref, alturaTotal(grade.padrao));
@@ -441,7 +456,7 @@ export function GradePersonalizavel({
               style={blocos.includes(i.id) ? undefined : { height: alturaPx(i.h, UNIDADE_EMPILHADA) }}
               className={blocos.includes(i.id) ? "" : "*:h-full"}
             >
-              {cards[i.id]}
+              {conteudo(i.id)}
             </div>
           ))}
       </div>
@@ -504,7 +519,7 @@ export function GradePersonalizavel({
             bloco={blocos.includes(item.id)}
             solto={solto}
           >
-            {cards[item.id]}
+            {conteudo(item.id)}
           </CardDaGrade>
         ))}
         {/* Onde o card arrastado vai cair: a moldura desliza de uma célula para outra. */}

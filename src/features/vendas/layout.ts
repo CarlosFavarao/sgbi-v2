@@ -1,3 +1,4 @@
+import type { Fonte } from "@/lib/acesso";
 import type { Layout, Limites } from "@/lib/layout";
 
 /**
@@ -56,4 +57,27 @@ export const ROTULOS: Record<string, string> = {
   crescimento: "Produtos A com maior crescimento",
   "maior-margem": "Produtos com maior margem bruta",
   "menor-margem": "Produtos com menor margem bruta",
+};
+
+/**
+ * Fontes de dados de cada card e KPI (`kpis:<id>`), D46: na plataforma que não
+ * envia alguma delas ao banco do BI, o card fica desabilitado. A tela inteira
+ * exige `venda` (`TELAS` em `src/lib/acesso.ts`).
+ */
+export const FONTES: Record<string, readonly Fonte[]> = {
+  "evolucao-vendas": ["venda"],
+  departamentos: ["venda"],
+  "evolucao-margem": ["venda"],
+  desempenho: ["venda", "pdv"],
+  "curva-abc": ["venda"],
+  queda: ["venda"],
+  crescimento: ["venda"],
+  "maior-margem": ["venda"],
+  "menor-margem": ["venda"],
+  "kpis:venda": ["venda"],
+  "kpis:margem-bruta": ["venda"],
+  "kpis:lucro-bruto": ["venda"],
+  "kpis:ticket-medio": ["pdv"],
+  "kpis:cupons": ["pdv"],
+  "kpis:itens-por-cupom": ["pdv"],
 };

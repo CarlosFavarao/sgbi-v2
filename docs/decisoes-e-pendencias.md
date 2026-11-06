@@ -68,6 +68,8 @@ Os detalhes técnicos e de dados de cada ponto estão em [`painel-executivo-poc.
 | D42 | **Ticket Médio e base PDV do Painel Executivo vêm do `logpdv`** (como em Vendas), não mais do `parfil`, que soma cerca de metade da venda (P6). Cancelamentos ÷ venda PDV também muda de base | 04/11/2026 |
 | D43 | **Layout personalizável** (pedido do usuário, 06/11/2026; piloto no Painel Executivo, levado para Vendas, Metas, Fluxo de Caixa e DFC em 06/11/2026): o lápis no cabeçalho liga a edição, em que os cards podem ser arrastados (dnd-kit, `@dnd-kit/react`), redimensionados e ocultados, com "Restaurar padrão". A tela é uma **grade de 12 colunas e linhas de altura fixa** (antes eram linhas): cada card tem posição e tamanho nos dois sentidos, um card pode ficar embaixo de outro mais baixo. Quando um card cresce, é movido ou trocado, quem fica por baixo desce; depois **todos os cards sobem até encostar no de cima** (ou no topo), sem mudar de tamanho, para não sobrar espaço vazio acima deles (pedido do usuário, 06/11/2026; também ao ocultar ou diminuir um card). Na horizontal, espaços vazios continuam permitidos. O card é arrastado por qualquer ponto, com uma prévia de onde vai cair (solto sobre outro card, os dois trocam de lugar; o que não couber vai para uma linha nova abaixo), e redimensionado pelas quatro bordas e pelos quatro cantos, com animação. Cada card tem tamanho mínimo e máximo (`layout.ts` de cada tela; na DFC, `src/features/financeiro/layout-dfc.ts`). Os KPIs formam um bloco: dentro dele, cada KPI pode ser arrastado, alargado (2 colunas) ou ocultado. A unidade de altura é calculada para o layout padrão ocupar a tela sem rolar. O layout fica salvo **no navegador** (`localStorage`); abaixo de 1280 px os cards empilham e não há edição. O `ResizableRow` foi removido. Na DFC, os dois cards que ficavam empilhados ao lado da tabela viraram: Evolução ao lado da tabela e Composição na linha de baixo | 06/11/2026 |
 | D44 | **Testes de regressão com Vitest** (pedido do coordenador, 06/11/2026), `npm test`. Cobrem só funções puras, sem banco nem navegador: `src/lib/` (`calc`, `date`, `serie`, `layout`), `src/server/params.ts` e as regras de cada tela (`compute.ts`, `metas.ts`, `periodos.ts`, `abc.ts`), em arquivos `*.test.ts` ao lado do código. Ficam de fora, por enquanto: consultas Drizzle (exigem banco de homologação com um período congelado, conferido com o BI antigo) e testes de tela (Playwright), porque o visual ainda muda a cada entrega. Regra: ao mudar uma regra de negócio, atualizar o teste dela; ao corrigir um erro de cálculo, acrescentar o teste que o pegaria | 06/11/2026 |
+| D45 | **Login pelo VX** (pedido do usuário, 06/11/2026), como no BI antigo: a tela `/login` envia usuário e senha ao `POST /sgbi/login` do VX (com token na tabela `tokens`, usuário em minúsculas e senha como digitada; sem token, os dois em maiúsculas, regra do BI antigo). A sessão é um JWT assinado (HS256, `jose`, `JWT_SECRET` obrigatório) num cookie httpOnly `sgbi-sessao` (com `CLIENT_SLUG`, `sgbi-sessao-<slug>`), válido por 24 h; "Mantenha-me conectado" guarda o cookie depois de fechar o navegador. A sessão guarda só login, nome e `admin`. O `src/proxy.ts` redireciona as telas sem sessão para o login (voltando depois para a tela pedida, `?de=`) e responde 401 nas rotas da API; o `handle()` das rotas checa a sessão de novo. Sessão vencida durante o uso volta ao login. O menu do usuário (barra lateral) mostra o nome e "Sair". A tela de login mostra a situação da API do VX, nome fantasia, CNPJ e código do cliente (`GET /status`), como no BI antigo. **Sem permissões por enquanto** (P59): quem o VX aceita, entra e vê todas as telas e filiais. Não envia a versão ao repositório SG (P60) | 06/11/2026 |
+| D46 | **Cards desabilitados por plataforma e por permissão** (pedido do usuário, 06/11/2026). O BI atende VX, Cloud e Fivewin, e cada plataforma envia ao banco do BI um conjunto diferente de dados (o VX é a referência e recebe as novidades primeiro). A plataforma vem do campo `sistema` do login do VX (vazio ou desconhecido = VX, como no BI antigo) e fica na sessão; `PLATAFORMA` no `.env` força uma, para testes. Cada card e KPI declara as **fontes de dados** que usa (`FONTES` no `layout.ts` da tela: venda, compras, cupons do PDV, cancelamentos, despesas, metas, contas a pagar, contas a receber, cartões), e cada plataforma tem a lista das fontes que **não** envia (`FONTES_AUSENTES` em `src/lib/acesso.ts`). Sem alguma fonte, o card fica **desabilitado** ("Indisponível no Fivewin", com as fontes que faltam), não consulta nada e continua podendo ser movido e ocultado; a tela cujas fontes essenciais faltam (`TELAS`) mostra só o aviso e o item do menu fica desabilitado. As rotas da API recusam (403) a fonte que a plataforma não tem, para não devolver zeros que pareceriam dado real. A mesma estrutura atende as **permissões** (P59): chaves `tela`, `tela:card` e `tela:bloco:item`, com o card "Sem permissão"; enquanto não forem decididas, ninguém é restringido. A tabela de fontes por plataforma é **provisória**: o Fivewin repete os bloqueios do BI antigo (financeiro, despesas, cartões, metas e compras; `SystemAccess.ts`) e o Cloud não tem bloqueio (P61). Com isso, no Fivewin, Metas e Fluxo de Caixa ficam indisponíveis e, no Painel, os cards de despesas, metas, compras e os alertas | 06/11/2026 |
 
 ---
 
@@ -401,14 +403,44 @@ Levada para todas as telas em 06/11/2026 (pedido do usuário). Fica em aberto s�
 ### Acesso, segurança e integração
 
 **P13. Login e permissões** — Coordenação
-O BI antigo usa o login do VX e a tabela local `users` (relatórios liberados por usuário). A POC não tem login.
+O BI antigo usa o login do VX e a tabela local `users` (relatórios liberados por usuário).
 - O v2 mantém o mesmo modelo? Quando entra o login?
+
+> Resposta: _parcial: login pelo VX implementado em 06/11/2026 (D45); as permissões ficaram pendentes de decisão (P59)_
+
+**P14. Token da API do VX** — VX
+Em homologação a API responde sem `Authorization`, inclusive `/sgbi/usuarios` (nomes e logins de funcionários). O v2 lê o token da mesma tabela `tokens` do BI antigo, só no servidor (`src/server/vx.ts`), e nunca o devolve ao navegador (D45).
+- Em produção o token é obrigatório? Continua na tabela `tokens` ou vai para uma variável de ambiente?
 
 > Resposta: _em aberto_
 
-**P14. Token da API do VX** — VX
-Em homologação a API responde sem `Authorization`, inclusive `/sgbi/usuarios` (nomes e logins de funcionários).
-- Em produção o token é obrigatório? Onde ele fica guardado no v2?
+**P59. Permissões de usuário** — Coordenação / Negócio
+Desde o D45 há login, mas sem permissões: quem o VX aceita vê todas as telas e todas as filiais. No BI antigo:
+- quem não é `admin` (suporte) precisa estar na tabela local `users` com pelo menos um relatório liberado, senão recebe 403 mesmo com a senha certa;
+- o login do VX devolve `filiaisComPermissao`, que limita as filiais do usuário;
+- o `sistema` bloqueia painéis e `assistenteIaAjuda`/`assistenteIaConsultor` liberam os chats de IA.
+
+Perguntas:
+- O v2 mantém permissão por tela (equivalente aos relatórios liberados)? Quem administra e onde fica (tabela `users` do BI antigo, banco novo, P20)?
+- As filiais do usuário (`filiaisComPermissao`) devem limitar o filtro e as consultas? (A sessão hoje não as guarda.)
+- O usuário `admin` do VX continua vendo tudo?
+- O card sem permissão deve aparecer desabilitado ("Sem permissão", como hoje está preparado, D46) ou sumir da tela?
+
+A estrutura já está pronta (D46): falta só a fonte das permissões em `acessoDoUsuario` (`src/server/acesso.ts`).
+
+> Resposta: _em aberto_
+
+**P61. Dados de cada plataforma (VX, Cloud, Fivewin)** — VX / Coordenação
+O BI também funciona com Cloud e Fivewin, que não enviam ao banco do BI os mesmos dados que o VX (D46). Hoje a lista do que falta em cada uma é provisória (`FONTES_AUSENTES` em `src/lib/acesso.ts`): o Fivewin repete o BI antigo (sem financeiro, despesas, cartões, metas e compras) e o Cloud é tratado como o VX.
+- Quais tabelas cada plataforma popula (análise gerencial, compras, `logpdv`, cancelamentos, despesas, previsões de meta, contas a pagar e a receber, cartões, DRE)? Alguma popula só parte (ex.: sem faturamento, sem compras por departamento)?
+- O Cloud tem alguma ausência? O `sistema` do login sempre vem preenchido (`SGVX`, `CLOUD`, `FIVEWIN`)?
+- Quando uma plataforma passar a enviar um dado novo, quem avisa para atualizar a lista?
+
+> Resposta: _em aberto (documentação prevista pelo usuário)_
+
+**P60. Envio da versão ao repositório SG** — Coordenação / Infra
+O BI antigo, em produção, envia a cada login a versão do SGBI e do VX do cliente para `repo.sgsistemas.com.br`. O v2 não envia, para não registrar uma versão que ainda não está em uso.
+- O v2 deve enviar? Com qual identificação (para não se misturar com a versão do BI antigo)?
 
 > Resposta: _em aberto_
 

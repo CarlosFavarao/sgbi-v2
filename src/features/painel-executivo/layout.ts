@@ -1,3 +1,4 @@
+import type { Fonte } from "@/lib/acesso";
 import type { Layout, Limites } from "@/lib/layout";
 
 /**
@@ -48,4 +49,28 @@ export const ROTULOS: Record<string, string> = {
   meta: "Venda vs Meta (acumulado)",
   departamentos: "Compra sobre Venda",
   alertas: "Alertas e Pontos de Atenção",
+};
+
+/**
+ * Fontes de dados de cada card e KPI (`kpis:<id>`), D46: na plataforma que não
+ * envia alguma delas ao banco do BI, o card fica desabilitado. A tela inteira
+ * exige `venda` (`TELAS` em `src/lib/acesso.ts`).
+ */
+export const FONTES: Record<string, readonly Fonte[]> = {
+  "evolucao-venda": ["venda"],
+  "evolucao-margem": ["venda"],
+  meta: ["metas", "venda"],
+  departamentos: ["venda", "compra"],
+  // Os alertas comparam venda, despesas, cancelamentos (sobre a venda PDV) e compra sobre venda.
+  alertas: ["venda", "pdv", "cancelamentos", "despesas", "compra"],
+  "kpis:venda": ["venda"],
+  "kpis:lucro-bruto": ["venda"],
+  "kpis:margem-bruta": ["venda"],
+  "kpis:despesas-operacionais": ["despesas", "venda"],
+  "kpis:resultado-operacional": ["despesas", "venda"],
+  "kpis:venda-vs-meta": ["metas", "venda"],
+  "kpis:ticket-medio": ["pdv"],
+  "kpis:compra-sobre-venda": ["compra", "venda"],
+  "kpis:cancelamentos": ["cancelamentos", "pdv"],
+  "kpis:descontos": ["pdv"],
 };

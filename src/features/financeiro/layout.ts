@@ -1,3 +1,4 @@
+import type { Fonte } from "@/lib/acesso";
 import type { Layout, Limites } from "@/lib/layout";
 
 /**
@@ -51,3 +52,11 @@ export const ROTULOS: Record<string, string> = {
   "evolucao-mensal": "Evolução das Entradas e Saídas",
   "indicadores-caixa": "Indicadores de Caixa",
 };
+
+/**
+ * Fontes de dados por card (D46). Os cards usam contas a pagar, a receber e
+ * cartões, que a tela inteira já exige (`TELAS` em `src/lib/acesso.ts`); o
+ * Saldo por Conta não tem fonte (não integrado). Acrescente aqui o card que
+ * passar a depender de outra fonte.
+ */
+export const FONTES: Record<string, readonly Fonte[]> = {};

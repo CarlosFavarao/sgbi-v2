@@ -25,7 +25,7 @@ import { EvolucaoMensalChart, IndicadoresCard, SaldoContasCard } from "./cards-i
 import { EvolucaoCaixaChart } from "./evolucao-caixa-chart";
 import { FluxoPrevistoTable } from "./fluxo-previsto-table";
 import { kpisDoFinanceiro } from "./kpis-financeiro";
-import { LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
+import { FONTES, LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
 
 type FiltrosEstado = { mes: string | null; filiais: number[] | null };
 
@@ -192,12 +192,13 @@ export function Financeiro() {
       {cabecalho}
 
       <GradePersonalizavel
+        fontes={FONTES}
         grade={grade}
         rotulos={ROTULOS}
         blocos={["kpis"]}
         cards={{
           kpis: (
-            <BlocoKpis
+            <BlocoKpis fontes={FONTES}
               grade={grade}
               bloco="kpis"
               itens={kpisDoFinanceiro({

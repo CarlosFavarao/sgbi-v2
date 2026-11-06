@@ -5,7 +5,10 @@ import { mdiEyeOffOutline } from "@mdi/js";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { motion } from "motion/react";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { KpiBloqueado } from "@/components/acesso/card-bloqueado";
+import { useAcesso } from "@/components/acesso/contexto";
 import { Tooltip } from "@/components/ui/tooltip";
+import type { Fonte } from "@/lib/acesso";
 import { MAX_COLUNAS_ITEM_BLOCO, type ItemLayout } from "@/lib/layout";
 import { AlcaBorda, pararArraste } from "./alca-borda";
 import { animarSaida, MOLA, TRANSICAO_ORDENAR } from "./movimento";
@@ -158,13 +161,21 @@ export function BlocoKpis({
   bloco,
   itens,
   maxColunas,
+  fontes = {},
 }: {
   grade: LayoutTela;
   /** Id do bloco no layout (`layout.blocos`). */
   bloco: string;
   itens: ItemDoBloco[];
   maxColunas: number;
+  /**
+   * Fontes de dados de cada item, por `bloco:item` (o mesmo `FONTES` do
+   * `layout.ts` da tela): sem alguma na plataforma, ou sem permissão, o item
+   * fica desabilitado (D46).
+   */
+  fontes?: Record<string, readonly Fonte[]>;
 }) {
+  const acesso = useAcesso();
   const ref = useRef<HTMLDivElement>(null);
   const [medida, setMedida] = useState({ largura: 0, altura: 0 });
   useLayoutEffect(() => {
@@ -195,20 +206,25 @@ export function BlocoKpis({
       className="grid auto-rows-[minmax(2.25rem,1fr)] gap-2.5 overflow-y-auto!"
       style={{ gridTemplateColumns: `repeat(${colunas}, minmax(0, 1fr))` }}
     >
-      {visiveis.map((item, index) => (
-        <ItemKpi
-          key={item.id}
-          item={item}
-          index={index}
-          bloco={bloco}
-          titulo={porId.get(item.id)!.titulo}
-          grade={grade}
-          colunas={colunas}
-          larguraColuna={larguraColuna}
-        >
-          {porId.get(item.id)!.node}
-        </ItemKpi>
-      ))}
+      {visiveis.map((item, index) => {
+        const { titulo, node } = porId.get(item.id)!;
+        const chave = `${bloco}:${item.id}`;
+        const b = acesso.bloqueio(chave, fontes[chave]);
+        return (
+          <ItemKpi
+            key={item.id}
+            item={item}
+            index={index}
+            bloco={bloco}
+            titulo={titulo}
+            grade={grade}
+            colunas={colunas}
+            larguraColuna={larguraColuna}
+          >
+            {b ? <KpiBloqueado titulo={titulo} bloqueio={b} /> : node}
+          </ItemKpi>
+        );
+      })}
       {!visiveis.length && (
         <div className="col-span-full flex items-center justify-center rounded-2xl bg-secondary/30 text-sm text-muted-foreground ring-1 ring-border/60">
           Todos os indicadores estão ocultos

@@ -3,6 +3,8 @@ import "server-only";
 import { unstable_rethrow } from "next/navigation";
 import { daysBetween } from "@/lib/date";
 import type { Nivel, Origem, Periodo } from "@/lib/filtros";
+import { AcessoNegado } from "./acesso";
+import { usuarioAtual } from "./sessao";
 
 export class ParamError extends Error {}
 
@@ -55,13 +57,23 @@ export function parseNivel(params: URLSearchParams): Nivel {
 }
 
 
-/** Responde 400 para parâmetros inválidos e 500 (sem detalhes) para o resto. */
+/**
+ * Responde 401 sem sessão (o `proxy.ts` já barra antes; aqui é a checagem perto
+ * dos dados), 403 quando `exigirAcesso` recusa (plataforma sem a fonte ou sem
+ * permissão, D46), 400 para parâmetros inválidos e 500 (sem detalhes) para o resto.
+ */
 export async function handle<T>(fn: () => Promise<T>, contexto = "api"): Promise<Response> {
   try {
+    if (!(await usuarioAtual())) {
+      return Response.json({ error: "Sessão expirada. Entre novamente." }, { status: 401 });
+    }
     return Response.json(await fn());
   } catch (error) {
     // Erros internos do Next (ex.: interrupção do prerender) não são falhas da rota.
     unstable_rethrow(error);
+    if (error instanceof AcessoNegado) {
+      return Response.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof ParamError) {
       return Response.json({ error: error.message }, { status: 400 });
     }

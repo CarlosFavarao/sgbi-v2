@@ -1,3 +1,4 @@
+import type { Fonte } from "@/lib/acesso";
 import type { Layout, Limites } from "@/lib/layout";
 
 /**
@@ -51,3 +52,10 @@ export const ROTULOS: Record<string, string> = {
   melhores: "Melhor Desempenho",
   margem: "Situação da Margem Bruta",
 };
+
+/**
+ * Fontes de dados por card (D46). Todos os cards usam meta e venda, que a tela
+ * inteira já exige (`TELAS` em `src/lib/acesso.ts`); acrescente aqui o card que
+ * passar a depender de outra fonte.
+ */
+export const FONTES: Record<string, readonly Fonte[]> = {};
