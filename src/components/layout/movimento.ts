@@ -23,13 +23,18 @@ export function animarSaida(el: HTMLElement | null, depois: () => void) {
 
 /**
  * Leva o elemento da caixa onde estava (ex.: onde o card foi solto) até a
- * posição atual, com mola. Usado no card solto, que o dnd-kit tirou do fluxo.
+ * posição de destino, com mola. Usado no card solto, que o dnd-kit tirou do
+ * fluxo. O destino vem de fora (`para`, em coordenadas da tela) porque, na hora
+ * em que isto roda, o dnd-kit ainda não devolveu o elemento à grade e medi-lo
+ * daria a posição do arraste. Sem `para`, mede o elemento.
  */
-export function animarDesde(el: HTMLElement, de: DOMRect) {
+export function animarDesde(el: HTMLElement, de: DOMRect, para?: { left: number; top: number }) {
   if (reduzirMovimento()) return;
-  const para = el.getBoundingClientRect();
-  const dx = de.left - para.left;
-  const dy = de.top - para.top;
+  const destino = para ?? el.getBoundingClientRect();
+  const dx = de.left - destino.left;
+  const dy = de.top - destino.top;
   if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+  // Já na posição de partida: nenhum quadro mostra o card no destino antes de a animação começar.
+  el.style.transform = `translate(${dx}px, ${dy}px)`;
   void animate(el, { x: [dx, 0], y: [dy, 0] }, MOLA);
 }

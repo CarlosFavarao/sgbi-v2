@@ -5,6 +5,7 @@ import { mdiDrag, mdiEyeOffOutline } from "@mdi/js";
 import { Feedback } from "@dnd-kit/dom";
 import { move } from "@dnd-kit/helpers";
 import { DragDropProvider, useDraggable } from "@dnd-kit/react";
+import { flushSync } from "react-dom";
 import { motion } from "motion/react";
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -133,12 +134,19 @@ function CardDaGrade({
   const elRef = useRef<HTMLDivElement | null>(null);
   const inicio = useRef<{ x: number; y: number; w: number; h: number; ret: DOMRect } | null>(null);
   const [aoVivo, setAoVivo] = useState<AoVivo | null>(null);
+  // Deslocamento encaixado (colunas e linhas) do redimensionamento em andamento, aplicado ao soltar.
+  const alvo = useRef<{ colunas: number; linhas: number } | null>(null);
   const acabouDeCair = solto?.id === item.id;
 
   // O card solto sai de onde foi largado e desliza (mola) até o lugar novo.
   useLayoutEffect(() => {
-    if (acabouDeCair && elRef.current && solto) animarDesde(elRef.current, solto.de);
-  }, [acabouDeCair, solto]);
+    const el = elRef.current;
+    if (!acabouDeCair || !el || !solto) return;
+    // Destino calculado pela grade: o dnd-kit só devolve o card à célula depois deste efeito.
+    const grid = el.parentElement?.getBoundingClientRect();
+    const para = grid && { left: grid.left + item.x * (coluna + GAP), top: grid.top + item.y * (unidade + GAP) };
+    animarDesde(el, solto.de, para);
+  }, [acabouDeCair, solto, item.x, item.y, coluna, unidade]);
 
   const lim = limitesDe(limites, item.id);
   const passo = { x: coluna + GAP, y: unidade + GAP };
@@ -197,12 +205,18 @@ function CardDaGrade({
       ancoraDireita: borda.includes("l"),
       ancoraBaixo: borda.includes("t"),
     });
-    aplicar(borda, Math.round(dx / passo.x), Math.round(dy / passo.y), i);
+    // Só a seleção acompanha o ponteiro; o card e a grade não mudam até soltar.
+    alvo.current = { colunas: Math.round(dx / passo.x), linhas: Math.round(dy / passo.y) };
   };
 
-  const soltar = () => {
+  // Ao soltar, o card assume o tamanho encaixado de uma vez (a mola do layout o leva até lá).
+  const soltar = (borda: Borda) => {
+    const i = inicio.current;
+    const a = alvo.current;
     inicio.current = null;
+    alvo.current = null;
     setAoVivo(null);
+    if (i && a) aplicar(borda, a.colunas, a.linhas, i);
   };
 
   return (
@@ -219,20 +233,7 @@ function CardDaGrade({
       style={posicaoNaGrade(item)}
       className={`relative min-h-0 min-w-0 ${isDragging ? "z-40" : aoVivo ? "z-30" : "z-10"}`}
     >
-      {/* Durante o redimensionamento: onde o card vai encaixar. */}
-      {aoVivo && <div aria-hidden className="absolute inset-0 rounded-2xl bg-primary/[0.06] ring-1 ring-primary/25" />}
       <div
-        style={
-          aoVivo
-            ? {
-                position: "absolute",
-                width: aoVivo.largura,
-                height: aoVivo.altura,
-                ...(aoVivo.ancoraDireita ? { right: 0 } : { left: 0 }),
-                ...(aoVivo.ancoraBaixo ? { bottom: 0 } : { top: 0 }),
-              }
-            : undefined
-        }
         className={`h-full rounded-2xl transition-[box-shadow,scale] duration-300 ${isDragging ? "scale-[1.015] shadow-2xl" : ""}`}
       >
         {/* Na edição o conteúdo não reage (não amplia gráfico nem ordena tabela sem querer). Card pequeno:
@@ -302,7 +303,7 @@ function CardDaGrade({
                 rotulo={`Redimensionar ${rotulo} ${NOME_BORDA[borda]} (${item.w} colunas × ${item.h} linhas; setas)`}
                 aoIniciar={() => iniciar(borda)}
                 aoMover={mover(borda)}
-                aoSoltar={soltar}
+                aoSoltar={() => soltar(borda)}
                 aoTeclar={(dx, dy) => aplicar(borda, dx, dy, item)}
                 noTeclado={borda.length === 1}
               />
@@ -310,6 +311,20 @@ function CardDaGrade({
           </div>
         )}
       </div>
+      {/* Redimensionando: uma seleção azul acompanha o ponteiro (como a seleção da área de trabalho); o card só
+          assume o tamanho ao soltar. */}
+      {aoVivo && (
+        <div
+          aria-hidden
+          style={{
+            width: aoVivo.largura,
+            height: aoVivo.altura,
+            ...(aoVivo.ancoraDireita ? { right: 0 } : { left: 0 }),
+            ...(aoVivo.ancoraBaixo ? { bottom: 0 } : { top: 0 }),
+          }}
+          className="pointer-events-none absolute z-20 rounded-2xl border border-primary/70 bg-primary/20"
+        />
+      )}
     </motion.div>
   );
 }
@@ -481,9 +496,13 @@ export function GradePersonalizavel({
           const de = source.element?.getBoundingClientRect();
           const depois = resultadoDe(destino);
           if (depois && de) {
-            setSolto({ id: String(source.id), de });
+            // Síncrono: o card novo precisa estar pronto antes de o dnd-kit tirá-lo do arraste; do contrário,
+            // um quadro mostra o card no destino antes de a animação começar (a "piscada").
+            flushSync(() => {
+              setSolto({ id: String(source.id), de });
+              grade.substituir(depois);
+            });
             window.setTimeout(() => setSolto(null), DURACAO_SOLTO);
-            grade.substituir(depois);
           }
         } else if (!event.canceled && source.type === "item-bloco") {
           const bloco = String((source.data as { bloco?: string }).bloco);

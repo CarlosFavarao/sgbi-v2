@@ -438,6 +438,15 @@ O BI também funciona com Cloud e Fivewin, que não enviam ao banco do BI os mes
 
 > Resposta: _em aberto (documentação prevista pelo usuário)_
 
+**P62. Slug do cliente (`CLIENT_SLUG`)** — Coordenação / Infra
+No BI antigo o slug nomeia a instalação de cada cliente (instalador Linux: pasta `clientes/<slug>`, container `sgbi-<slug>`, banco `sgbi_<slug>`, variável `CLIENT_SLUG`) e isola a sessão: cookie `session-<slug>`, slug dentro do JWT conferido no middleware e chaves do `localStorage` prefixadas `<slug>:`. Vários clientes rodam no mesmo servidor em portas diferentes, e cookies não separam portas. No v2 só existem o cookie `sgbi-sessao-<slug>` e a validação do slug na sessão (D45); o layout dos cards fica em `sgbi:layout:<tela>:v1`, sem prefixo.
+- O v2 segue o mesmo modelo (um container e um banco por cliente, em portas diferentes) ou outro (um endereço por cliente)?
+- Convive com o BI antigo no mesmo servidor? Então os nomes de container, banco e cookie não podem colidir.
+- Prefixar o armazenamento do navegador com o slug (hoje só o layout) e expor o slug ao código (nome do cliente na tela)?
+- O instalador Windows do antigo não define `CLIENT_SLUG`; o do v2 define?
+
+> Resposta: _adiada pelo usuário (06/11/2026): decisão e implementação ficam para depois_
+
 **P60. Envio da versão ao repositório SG** — Coordenação / Infra
 O BI antigo, em produção, envia a cada login a versão do SGBI e do VX do cliente para `repo.sgsistemas.com.br`. O v2 não envia, para não registrar uma versão que ainda não está em uso.
 - O v2 deve enviar? Com qual identificação (para não se misturar com a versão do BI antigo)?

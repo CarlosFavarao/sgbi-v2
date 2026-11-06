@@ -109,6 +109,7 @@ export function BarraEdicao({
               onClick={() => {
                 grade.restaurarPadrao();
                 setConfirmar(false);
+                grade.setEditando(false);
               }}
               className="h-8 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-accent"
             >
